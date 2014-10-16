@@ -11,8 +11,25 @@
             <file functionprefix="DenonDNS3700" filename="Denon-DN-S3700-hybrid-scripts.js"/>
         </scriptfiles>
         <controls>
+            <control>
+                <group>[Channel1]</group>
+                <key>keylock</key>
+                <status>0x90</status>
+                <midino>0x06</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>keylock</key>
+                <status>0x80</status>
+                <midino>0x06</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
         </controls>
-        <outputs>
-        </outputs>
+        <outputs/>
     </controller>
 </MixxxControllerPreset>
