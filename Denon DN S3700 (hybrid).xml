@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='utf-8'?>
+<MixxxControllerPreset mixxxVersion="" schemaVersion="1">
+    <info>
+        <name>Denon DN-S3700 (Hybrid Mode)</name>
+        <author>Sergey Butylkov</author>
+        <description>Controller preset for Denon DN-S3700 turntable operating in hybrid mode (midi + build-in vinyl emulation)</description>
+        <forums>TODO</forums>
+    </info>
+    <controller id="DN-S3700">
+        <scriptfiles>
+            <file functionprefix="DenonDNS3700" filename="Denon-DN-S3700-hybrid-scripts.js"/>
+        </scriptfiles>
+        <controls>
+        </controls>
+        <outputs>
+        </outputs>
+    </controller>
+</MixxxControllerPreset>
