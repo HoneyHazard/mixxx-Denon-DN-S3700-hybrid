@@ -1,6 +1,6 @@
 function DenonDNS3700() {}
 
-DenonDNS3700.m_initDisplayCounter = 8;
+DenonDNS3700.initDisplayCounter = 8;
 
 DenonDNS3700.LedMode = {
     On: 0x4A,
@@ -8,25 +8,23 @@ DenonDNS3700.LedMode = {
     Blink: 0x4C
 }
 
-DenonDNS3700.c_cmdCode = 0xB0;
+DenonDNS3700.CMD_CODE = 0xB0;
 
-DenonDNS3700.c_maxNumChars = 24;
+DenonDNS3700.MAX_NUM_CHARS = 24;
 
-DenonDNS3700.c_emptyChar = " ".charCodeAt(0);
+DenonDNS3700.EMPTY_CHAR = " ".charCodeAt(0);
 
 DenonDNS3700.init = function (id)
 {
-    this.tapLed(this.LedMode.On);
+    this.tapLed(this.LedMode.Blink);
 
-    this.printString("Hello, Mixxx");
-
-    this.m_initFlashTimerID
-        = engine.beginTimer(500, "DenonDNS3700.initDisplayTimerHandler");
+    this.initFlashTimerId
+        = engine.beginTimer(500, "DenonDNS3700.initDisplayTimerHandler()");
 }
 
 DenonDNS3700.tapLed = function(mode)
 {
-    midi.sendShortMsg(this.c_cmdCode, mode, 0x09);    
+    midi.sendShortMsg(this.CMD_CODE, mode, 0x09);    
 }
 
 DenonDNS3700.printChar = function(idx, ch)
@@ -37,28 +35,39 @@ DenonDNS3700.printChar = function(idx, ch)
     var idxMsb = 0x01 + idx;
     var idxLsb = 0x21 + idx;
     
-    midi.sendShortMsg(this.c_cmdCode, idxMsb, (ch & 0xF0) >> 4);
-    midi.sendShortMsg(this.c_cmdCode, idxLsb, ch & 0x0F);
+    midi.sendShortMsg(this.CMD_CODE, idxMsb, (ch & 0xF0) >> 4);
+    midi.sendShortMsg(this.CMD_CODE, idxLsb, ch & 0x0F);
 }
 
 DenonDNS3700.printString = function(str)
 {
-    for (i = 0; i < this.c_maxNumChars; ++i) {
+    for (i = 0; i < this.MAX_NUM_CHARS; ++i) {
         if (i < str.length) {
             this.printChar(i, str.charCodeAt(i));
         } else {
-            this.printChar(i, this.c_emptyChar);
+            this.printChar(i, this.EMPTY_CHAR);
         }
     }
 }
 
 DenonDNS3700.initDisplayTimerHandler = function()
 {
-    this.tapLed(this.LedMode.Blink);
-    
-    if (this.m_initDisplayCounter == 0) {
-        engine.stopTimer(this.m_initDisplayCounter);
+    if (this.initDisplayCounter % 4 == 0) {
+        this.printString("Hello, Mixx");
+        this.tapLed(this.LedMode.On);
+    } else if (this.initDisplayCounter % 2 == 0) {
+        this.printString("012345789ABCDEFGHIJKLMNO");
+        this.tapLed(this.LedMode.On);
+    } else {
+        this.printString("");
+        this.tapLed(this.LedMode.Off);
     }
-    --this.m_initDisplayCounter;    
+    
+    if (this.initDisplayCounter == 0) {
+        this.tapLed(this.LedMode.Off);
+        this.printString("READY :)");
+        engine.stopTimer(this.initFlashTimerId);
+    }
+    --this.initDisplayCounter;
 }
 
