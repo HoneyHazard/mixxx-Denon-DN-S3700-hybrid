@@ -39,6 +39,32 @@ DenonDNS3700.printChar = function(idx, ch)
     midi.sendShortMsg(this.CMD_CODE, idxLsb, ch & 0x0F);
 }
 
+DenonDNS3700.printLine1 = function(str)
+{
+    var half = this.MAX_NUM_CHARS / 2;
+    for (i = 0; i < half; ++i) {
+        if (i < str.length) {
+            this.printChar(i, str.charCodeAt(i));
+        } else {
+            this.printChar(i, this.EMPTY_CHAR);
+        }
+    }
+}
+
+DenonDNS3700.printLine2 = function(str)
+{
+    var half = this.MAX_NUM_CHARS / 2;
+    for (i = 0; i < half; ++i) {
+        var iAdjusted = i + half;
+        if (i < str.length) {
+            this.printChar(iAdjusted, str.charCodeAt(i));
+        } else {
+            this.printChar(iAdjusted, this.EMPTY_CHAR);
+        }
+    }
+}
+
+
 DenonDNS3700.printString = function(str)
 {
     for (i = 0; i < this.MAX_NUM_CHARS; ++i) {
@@ -53,7 +79,8 @@ DenonDNS3700.printString = function(str)
 DenonDNS3700.initDisplayTimerHandler = function()
 {
     if (this.initDisplayCounter % 4 == 0) {
-        this.printString("Hello, Mixx");
+        this.printLine1("/  Hello,  \\");
+        this.printLine2("\\  Mixxx   /");
         this.tapLed(this.LedMode.On);
     } else if (this.initDisplayCounter % 2 == 0) {
         this.printString("012345789ABCDEFGHIJKLMNO");
