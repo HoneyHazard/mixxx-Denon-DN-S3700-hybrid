@@ -12,6 +12,15 @@
         </scriptfiles>
         <controls>
             <control>
+              <group>[Master]</group>
+              <key>DenonDNS3700.playPressed</key>
+              <status>0x90</status>
+              <midino>0x43</midino>
+              <options>
+                <Script-Binding />
+              </options>
+            </control>            
+            <control>
                 <group>[Channel1]</group>
                 <key>keylock</key>
                 <status>0x90</status>
