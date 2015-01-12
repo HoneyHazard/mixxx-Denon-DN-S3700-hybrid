@@ -13,10 +13,9 @@ DenonDNS3700.ButtonChange = {
 
 DenonDNS3700.PlaybackState = {
     Initializing : 0,
-    FileNavigation : 1,
-    TrackNavigation : 2,
-    Paused : 3,
-    Playing : 4,
+    Searching : 1,
+    Paused : 2,
+    Playing : 3,
 }
 
 DenonDNS3700.CMD_CODE = 0xB0;
@@ -25,6 +24,7 @@ DenonDNS3700.EMPTY_CHAR = " ".charCodeAt(0);
 
 DenonDNS3700.initDisplayCounter = 8;
 DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Initializing;
+DenonDNS3700.isTrackLoaded = false;
 
 DenonDNS3700.init = function (id)
 {
@@ -61,6 +61,11 @@ DenonDNS3700.turntableOff = function()
 DenonDNS3700.playLed = function(mode)
 {
     midi.sendShortMsg(DenonDNS3700.CMD_CODE, mode, 0x27);
+}
+
+DenonDNS3700.cueLed = function(mode)
+{
+    midi.sendShortMsg(DenonDNS3700.CMD_CODE, mode, 0x26);
 }
 
 DenonDNS3700.tapLed = function(mode)
@@ -149,8 +154,9 @@ DenonDNS3700.initDisplayTimerHandler = function()
 
 DenonDNS3700.enterPlaying = function()
 {
-    DenonDNS3700.printLine1("Playing");
+    DenonDNS3700.printLine1("plbk: Playing");
     DenonDNS3700.playLed(DenonDNS3700.LedMode.On);
+    DenonDNS3700.cueLed(DenonDNS3700.LedMode.Off);
     DenonDNS3700.effectsLed(DenonDNS3700.LedMode.On);
     DenonDNS3700.parametersLed(DenonDNS3700.LedMode.On);
     DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Playing;
@@ -158,21 +164,44 @@ DenonDNS3700.enterPlaying = function()
 
 DenonDNS3700.enterPaused = function()
 {
-    DenonDNS3700.printLine1("Paused");
+    DenonDNS3700.printLine1("plbk: Paused");
     DenonDNS3700.playLed(DenonDNS3700.LedMode.Blink);
+    DenonDNS3700.cueLed(DenonDNS3700.LedMode.Off);
     DenonDNS3700.effectsLed(DenonDNS3700.LedMode.On);
     DenonDNS3700.parametersLed(DenonDNS3700.LedMode.On);
     DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Paused;
 }
 
-DenonDNS3700.playPressed = function(channel, control, value)
+DenonDNS3700.enterSearching = function()
 {
-    DenonDNS3700.printLine2("Play Pressed");
+    DenonDNS3700.printLine1("plbk: Searching");
+    DenonDNS3700.playLed(DenonDNS3700.LedMode.Off);
+    DenonDNS3700.cueLed(DenonDNS3700.LedMode.On);
+    DenonDNS3700.effectsLed(DenonDNS3700.LedMode.On);
+    DenonDNS3700.parametersLed(DenonDNS3700.LedMode.Blink);
+    DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Paused;   
+}
+
+DenonDNS3700.playButtonChanged = function(channel, control, value)
+{
+    DenonDNS3700.printLine2("db: Play Pressed");
     if (value == DenonDNS3700.ButtonChange.ButtonPressed) {
         if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Playing) {
             DenonDNS3700.enterPaused();
-        } else if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Paused) {
+        } else if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Paused
+                   ||                  
+                   DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Searching
+                && DenonDNS3700.isLoaded == true) {
             DenonDNS3700.enterPlaying();
         }
+    }
+}
+
+DenonDNS3700.cueButtonChanged = function(channel, control, value)
+{
+    DenonDNS3700.printLine2("db: Cue Pressed");
+    if (value == DenonDNS3700.ButtonChange.ButtonPressed) {
+        //if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Playing) {
+        DenonDNS3700.enterSearching();
     }
 }
