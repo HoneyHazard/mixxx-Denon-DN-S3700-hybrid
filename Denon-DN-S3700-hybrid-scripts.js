@@ -11,7 +11,7 @@ DenonDNS3700.ButtonChange = {
     ButtonPressed : 0x40
 }
 
-DenonDNS3700.MainState = {
+DenonDNS3700.PlaybackState = {
     Initializing : 0,
     FileNavigation : 1,
     TrackNavigation : 2,
@@ -24,7 +24,7 @@ DenonDNS3700.MAX_NUM_CHARS = 24;
 DenonDNS3700.EMPTY_CHAR = " ".charCodeAt(0);
 
 DenonDNS3700.initDisplayCounter = 8;
-DenonDNS3700.mainState = DenonDNS3700.MainState.Initializing;
+DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Initializing;
 
 DenonDNS3700.init = function (id)
 {
@@ -47,7 +47,6 @@ DenonDNS3700.finishInit = function (id)
     DenonDNS3700.printLine2("READY :)");
     DenonDNS3700.enterPaused();
 }
-
 
 DenonDNS3700.turntableOn = function()
 {
@@ -154,7 +153,7 @@ DenonDNS3700.enterPlaying = function()
     DenonDNS3700.playLed(DenonDNS3700.LedMode.On);
     DenonDNS3700.effectsLed(DenonDNS3700.LedMode.On);
     DenonDNS3700.parametersLed(DenonDNS3700.LedMode.On);
-    DenonDNS3700.mainState = DenonDNS3700.MainState.Playing;
+    DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Playing;
 }
 
 DenonDNS3700.enterPaused = function()
@@ -163,16 +162,16 @@ DenonDNS3700.enterPaused = function()
     DenonDNS3700.playLed(DenonDNS3700.LedMode.Blink);
     DenonDNS3700.effectsLed(DenonDNS3700.LedMode.On);
     DenonDNS3700.parametersLed(DenonDNS3700.LedMode.On);
-    DenonDNS3700.mainState = DenonDNS3700.MainState.Paused;
+    DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Paused;
 }
 
 DenonDNS3700.playPressed = function(channel, control, value)
 {
     DenonDNS3700.printLine2("Play Pressed");
     if (value == DenonDNS3700.ButtonChange.ButtonPressed) {
-        if (DenonDNS3700.mainState == DenonDNS3700.MainState.Playing) {
+        if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Playing) {
             DenonDNS3700.enterPaused();
-        } else if (DenonDNS3700.mainState == DenonDNS3700.MainState.Paused) {
+        } else if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Paused) {
             DenonDNS3700.enterPlaying();
         }
     }
