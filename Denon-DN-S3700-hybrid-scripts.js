@@ -28,8 +28,9 @@ DenonDNS3700.mainState = DenonDNS3700.MainState.Initializing;
 
 DenonDNS3700.init = function (id)
 {
-    DenonDNS3700.turnTableOff();
-
+    // Does not work in hybrid mode :(
+    // Is there a way to start up in a known platter state?
+    DenonDNS3700.turntableOff();
     
     DenonDNS3700.tapLed(DenonDNS3700.LedMode.Blink);
     DenonDNS3700.playLed(DenonDNS3700.LedMode.Off);
@@ -38,12 +39,22 @@ DenonDNS3700.init = function (id)
         = engine.beginTimer(500, "DenonDNS3700.initDisplayTimerHandler()");
 }
 
-DenonDNS3700.turnTableOn = function()
+// Invoked from the timer handler
+DenonDNS3700.finishInit = function (id)
+{
+    DenonDNS3700.tapLed(DenonDNS3700.LedMode.On);
+    engine.stopTimer(DenonDNS3700.initFlashTimerId);
+    DenonDNS3700.printLine2("READY :)");
+    DenonDNS3700.enterPaused();
+}
+
+
+DenonDNS3700.turntableOn = function()
 {
     midi.sendShortMsg(DenonDNS3700.CMD_CODE, 0x66, 0x7F);
 }
 
-DenonDNS3700.turnTableOff = function()
+DenonDNS3700.turntableOff = function()
 {
     midi.sendShortMsg(DenonDNS3700.CMD_CODE, 0x66, 0x00);
 }
@@ -58,10 +69,20 @@ DenonDNS3700.tapLed = function(mode)
     midi.sendShortMsg(DenonDNS3700.CMD_CODE, mode, 0x09);    
 }
 
+DenonDNS3700.effectsLed = function(mode)
+{
+    midi.sendShortMsg(DenonDNS3700.CMD_CODE, mode, 0x2D);
+}
+
+DenonDNS3700.parametersLed = function(mode)
+{
+    midi.sendShortMsg(DenonDNS3700.CMD_CODE, mode, 0x1E);
+}
+
 DenonDNS3700.printChar = function(idx, ch)
 {
     if (idx >= 5) {
-        idx++; // quirky offsets...
+        idx++; // quirky offsets (see product documentation)
     }
     var idxMsb = 0x01 + idx;
     var idxLsb = 0x21 + idx;
@@ -122,10 +143,7 @@ DenonDNS3700.initDisplayTimerHandler = function()
     }
     
     if (DenonDNS3700.initDisplayCounter == 0) {
-        DenonDNS3700.tapLed(DenonDNS3700.LedMode.Off);
-        engine.stopTimer(DenonDNS3700.initFlashTimerId);
-        DenonDNS3700.printLine2("READY :)");
-        DenonDNS3700.enterPaused();
+        DenonDNS3700.finishInit();
     }
     --DenonDNS3700.initDisplayCounter;
 }
@@ -134,6 +152,8 @@ DenonDNS3700.enterPlaying = function()
 {
     DenonDNS3700.printLine1("Playing");
     DenonDNS3700.playLed(DenonDNS3700.LedMode.On);
+    DenonDNS3700.effectsLed(DenonDNS3700.LedMode.On);
+    DenonDNS3700.parametersLed(DenonDNS3700.LedMode.On);
     DenonDNS3700.mainState = DenonDNS3700.MainState.Playing;
 }
 
@@ -141,6 +161,8 @@ DenonDNS3700.enterPaused = function()
 {
     DenonDNS3700.printLine1("Paused");
     DenonDNS3700.playLed(DenonDNS3700.LedMode.Blink);
+    DenonDNS3700.effectsLed(DenonDNS3700.LedMode.On);
+    DenonDNS3700.parametersLed(DenonDNS3700.LedMode.On);
     DenonDNS3700.mainState = DenonDNS3700.MainState.Paused;
 }
 
