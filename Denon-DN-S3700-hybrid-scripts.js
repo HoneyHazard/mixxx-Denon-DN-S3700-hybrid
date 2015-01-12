@@ -18,6 +18,16 @@ DenonDNS3700.PlaybackState = {
     Playing : 3,
 }
 
+DenonDNS3700.DisplayState = {
+    Unassigned : 0,
+    Static : 1,
+    Scrolling : 2,
+    Blinking: 3
+}
+
+// TODO: Full length display!!!
+// TODO: Display States
+
 DenonDNS3700.CMD_CODE = 0xB0;
 DenonDNS3700.MAX_NUM_CHARS = 24;
 DenonDNS3700.EMPTY_CHAR = " ".charCodeAt(0);
@@ -191,7 +201,7 @@ DenonDNS3700.playButtonChanged = function(channel, control, value)
         } else if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Paused
                    ||                  
                    DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Searching
-                && DenonDNS3700.isLoaded == true) {
+                && DenonDNS3700.isTrackLoaded == true) {
             DenonDNS3700.enterPlaying();
         }
     }
