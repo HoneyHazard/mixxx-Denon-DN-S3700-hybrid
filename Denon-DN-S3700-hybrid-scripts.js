@@ -19,14 +19,33 @@ DenonDNS3700.PlaybackState = {
 }
 
 DenonDNS3700.DisplayState = {
-    Unassigned : 0,
+    Empty : 0,
     Static : 1,
     Scrolling : 2,
     Blinking: 3
 }
 
-// TODO: Full length display!!!
-// TODO: Display States
+/* TODO: Display States
+
+ per row:
+    displayState
+    colStart, 
+    colEnd, 
+    text,
+    tickInterval (frequency),
+    numTicks, (duration; 0=infinite)
+    
+    prevState,
+    currTick = 0
+
+functions:
+    blinkText(row, colStart, colEnd, text, tickInterval, numTicks, bool restore);
+    scrollText(row, colStart, colEnd, text, tickInterval, numTicks, bool restore
+    staticText(row, colStart, colEnd, text, duration, bool restore);
+    emptyText(row, duration);
+*/
+
+// TODO: Track navigation; test with both
 
 DenonDNS3700.CMD_CODE = 0xB0;
 DenonDNS3700.MAX_NUM_CHARS = 16;
