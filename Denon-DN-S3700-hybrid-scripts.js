@@ -18,11 +18,19 @@ DenonDNS3700.PlaybackState = {
     Playing : 3,
 }
 
+DenonDNS3700.DisplayState = {
+    Empty : 0,
+    Static : 1,
+    Scroll : 2,
+    Blink: 3
+}
+
 // TODO: Track navigation; test with both
 
 DenonDNS3700.CMD_CODE = 0xB0;
 DenonDNS3700.MAX_NUM_CHARS = 16;
 DenonDNS3700.EMPTY_CHAR = " ".charCodeAt(0);
+DenonDNS3700.DEBUG_LEVEL = 2;
 
 // Just hard code the midi numbers rathen than try to figure out the bizarre allocation
 // scheme by the manufacturer
@@ -44,21 +52,21 @@ DenonDNS3700.initDisplayCounter = 8;
 DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Initializing;
 DenonDNS3700.isTrackLoaded = false;
 
+DenonDNS3700.displayState = [ null, null ];
+DenonDNS3700.displayTimer = [ null, null ];
+
 DenonDNS3700.init = function (id)
 {
     DenonDNS3700.clearLine(0);
     DenonDNS3700.clearLine(1);
     DenonDNS3700.tapLed(DenonDNS3700.LedMode.Off);
 
-
     //var test = DenonDNS3700.newBlinkDispState(0, "test", 250, 5000);
     //var test = DenonDNS3700.newStaticDispState(0, "test", 5000);   
     //DenonDNS3700.pushDispState(0, test);
-    DenonDNS3700.setTextDisplay(0, 0, "a b c d e");
-    DenonDNS3700.blinkTextDisplay(0, 0, "test", 500, 5000);
+    //DenonDNS3700.setTextDisplay(0, 0, "a b c d e");
+    //DenonDNS3700.blinkTextDisplay(0, 0, "test", 500, 5000);
     
-    
-    /*
     // Does not work in hybrid mode :(
     // Is there a way to start up in a known platter state?
     DenonDNS3700.turntableOff();
@@ -68,7 +76,7 @@ DenonDNS3700.init = function (id)
 
     DenonDNS3700.initFlashTimerId
         = engine.beginTimer(500, "DenonDNS3700.initDisplayTimerHandler()");
-    */
+    
 }
 
 // Invoked from the timer handler
@@ -76,7 +84,7 @@ DenonDNS3700.finishInit = function (id)
 {
     DenonDNS3700.tapLed(DenonDNS3700.LedMode.On);
     engine.stopTimer(DenonDNS3700.initFlashTimerId);
-    DenonDNS3700.printLine2("READY :)");
+    DenonDNS3700.setTextDisplay(0, 0, "READY :)");
     DenonDNS3700.enterPaused();
 }
 
@@ -158,8 +166,8 @@ DenonDNS3700.putString = function(row, col, str)
 DenonDNS3700.initDisplayTimerHandler = function()
 {
     if (DenonDNS3700.initDisplayCounter % 4 == 0) {
-        DenonDNS3700.printLine1("/  Hello,  \\");
-        DenonDNS3700.printLine2("\\  Mixxx   /");
+        DenonDNS3700.printLine1("/    Hello,    \\");
+        DenonDNS3700.printLine2("\\    Mixxx     /");
         DenonDNS3700.tapLed(DenonDNS3700.LedMode.On);
     } else if (DenonDNS3700.initDisplayCounter % 2 == 0) {
         DenonDNS3700.printLine1("12345678901234");
@@ -179,7 +187,7 @@ DenonDNS3700.initDisplayTimerHandler = function()
 
 DenonDNS3700.enterPlaying = function()
 {
-    DenonDNS3700.printLine1("plbk: Playing");
+    DenonDNS3700.debugStateInfo("Playing");
     DenonDNS3700.playLed(DenonDNS3700.LedMode.On);
     DenonDNS3700.cueLed(DenonDNS3700.LedMode.Off);
     DenonDNS3700.effectsLed(DenonDNS3700.LedMode.On);
@@ -189,7 +197,7 @@ DenonDNS3700.enterPlaying = function()
 
 DenonDNS3700.enterPaused = function()
 {
-    DenonDNS3700.printLine1("plbk: Paused");
+    DenonDNS3700.debugStateInfo("Paused");
     DenonDNS3700.playLed(DenonDNS3700.LedMode.Blink);
     DenonDNS3700.cueLed(DenonDNS3700.LedMode.Off);
     DenonDNS3700.effectsLed(DenonDNS3700.LedMode.On);
@@ -199,7 +207,7 @@ DenonDNS3700.enterPaused = function()
 
 DenonDNS3700.enterSearching = function()
 {
-    DenonDNS3700.printLine1("plbk: Searching");
+    DenonDNS3700.debugStateInfo("Searching");
     DenonDNS3700.playLed(DenonDNS3700.LedMode.Off);
     DenonDNS3700.cueLed(DenonDNS3700.LedMode.On);
     DenonDNS3700.effectsLed(DenonDNS3700.LedMode.On);
@@ -209,8 +217,9 @@ DenonDNS3700.enterSearching = function()
 
 DenonDNS3700.playButtonChanged = function(channel, control, value)
 {
-    DenonDNS3700.printLine2("db: Play Pressed");
+    DenonDNS3700.tapLed(DenonDNS3700.LedMode.On);
     if (value == DenonDNS3700.ButtonChange.ButtonPressed) {
+        DenonDNS3700.debugKeyInfo("Play Pressed");
         if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Playing) {
             DenonDNS3700.enterPaused();
         } else if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Paused
@@ -224,40 +233,12 @@ DenonDNS3700.playButtonChanged = function(channel, control, value)
 
 DenonDNS3700.cueButtonChanged = function(channel, control, value)
 {
-    DenonDNS3700.printLine2("db: Cue Pressed");
     if (value == DenonDNS3700.ButtonChange.ButtonPressed) {
+        DenonDNS3700.debugKeyInfo("Cue Pressed");
+
         //if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Playing) {
         DenonDNS3700.enterSearching();
     }
-}
-
-/* TODO: Display States
-
- per row:
-    displayState
-    colStart, 
-    colEnd, 
-    text,
-    tickInterval (frequency),
-    numTicks, (duration; 0=infinite)
-    
-    prevState,
-    currTick = 0
-
-functions:
-    blinkText(row, colStart, colEnd, text, tickInterval, numTicks, bool restore);
-    scrollText(row, colStart, colEnd, text, tickInterval, numTicks, bool restore
-    staticText(row, colStart, colEnd, text, duration, bool restore);
-    emptyText(row, duration);
-*/
-
-
-
-DenonDNS3700.DisplayState = {
-    Empty : 0,
-    Static : 1,
-    Scroll : 2,
-    Blink: 3
 }
 
 DenonDNS3700.setDispState = function(row, state)
@@ -292,9 +273,11 @@ DenonDNS3700.applyDispState = function(row, state)
         break;
     }
 
-    DenonDNS3700.displayTimer[row] = engine.beginTimer(
-        state.tickInterval,
-        "DenonDNS3700.displayTickHandler" + row);
+    if (state.tickInterval > 0 && state.numTicks > 0) {
+        DenonDNS3700.displayTimer[row] = engine.beginTimer(
+            state.tickInterval,
+            "DenonDNS3700.displayTickHandler" + row);
+    }
 }
 
 DenonDNS3700.displayTickHandler0 = function()
@@ -350,13 +333,6 @@ DenonDNS3700.clearTextDisplay = function(row, duration)
     DenonDNS3700.setDispState(row, state);
 }
 
-DenonDNS3700.displayState = [
-    DenonDNS3700.newEmptyDispState(0),
-    DenonDNS3700.newEmptyDispState(0),
-];
-
-DenonDNS3700.displayTimer = [null, null];
-
 DenonDNS3700.newStaticDispState = function(col, text, duration)
 {
     var obj = {
@@ -374,11 +350,17 @@ DenonDNS3700.newStaticDispState = function(col, text, duration)
 DenonDNS3700.setTextDisplay = function(row, col, text, duration)
 { 
     duration = (typeof duration == 'undefined' ? 0 : duration);
-    var state = DenonDNS3700.newStaticDispState(col, text, duration);
-    DenonDNS3700.setDispState(row, state);
+    var newState = DenonDNS3700.newStaticDispState(col, text, duration);
+
+    if (DenonDNS3700.displayState[row] != null
+     && DenonDNS3700.displayState[row].tickInterval > 0
+     && DenonDNS3700.displayState[row].numTicks > 0) {
+        DenonDNS3700.displayState[row].prevState = newState;
+    } else {
+        DenonDNS3700.setDispState(row, newState);
+    }
 }
 
-// blinkText(row, col, text, tickInterval, numTicks, bool restore);
 DenonDNS3700.newBlinkDispState = function(col, text, tickInterval, duration)
 {
     var obj = {
@@ -399,3 +381,19 @@ DenonDNS3700.blinkTextDisplay = function(row, col, text, tickInterval, duration)
     var state = DenonDNS3700.newBlinkDispState(col, text, tickInterval, duration);
     DenonDNS3700.pushDispState(row, state);
 }
+
+DenonDNS3700.debugKeyInfo = function(str)
+{
+    if (DenonDNS3700.DEBUG_LEVEL >= 2) {
+        DenonDNS3700.blinkTextDisplay(1, 0, "[ " + str + " ]", 200, 800);
+    }
+}
+
+DenonDNS3700.debugStateInfo = function(str)
+{
+    if (DenonDNS3700.DEBUG_LEVEL >= 1) {
+        DenonDNS3700.setTextDisplay(1, 0, "mode: " + str);
+    }
+}
+
+
