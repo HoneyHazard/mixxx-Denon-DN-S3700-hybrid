@@ -51,9 +51,12 @@ DenonDNS3700.init = function (id)
     DenonDNS3700.tapLed(DenonDNS3700.LedMode.Off);
 
 
-    var test = DenonDNS3700.newBlinkDispState(0, "test", 250, 5000);
+    //var test = DenonDNS3700.newBlinkDispState(0, "test", 250, 5000);
     //var test = DenonDNS3700.newStaticDispState(0, "test", 5000);   
-    DenonDNS3700.pushDispState(0, test);
+    //DenonDNS3700.pushDispState(0, test);
+    DenonDNS3700.setTextDisplay(0, 0, "a b c d e");
+    DenonDNS3700.blinkTextDisplay(0, 0, "test", 500, 5000);
+    
     
     /*
     // Does not work in hybrid mode :(
@@ -248,6 +251,8 @@ functions:
     emptyText(row, duration);
 */
 
+
+
 DenonDNS3700.DisplayState = {
     Empty : 0,
     Static : 1,
@@ -257,12 +262,18 @@ DenonDNS3700.DisplayState = {
 
 DenonDNS3700.setDispState = function(row, state)
 {
+    if (DenonDNS3700.displayTimer[row] != null) {
+        engine.stopTimer(DenonDNS3700.displayTimer[row]);
+    }
     DenonDNS3700.displayState[row] = state;
     DenonDNS3700.applyDispState(row, state);
 }
 
 DenonDNS3700.pushDispState = function(row, state)
 {
+    if (DenonDNS3700.displayTimer[row] != null) {
+        engine.stopTimer(DenonDNS3700.displayTimer[row]);
+    }
     state.prevState = DenonDNS3700.displayState[row];
     DenonDNS3700.displayState[row] = state;
     DenonDNS3700.applyDispState(row, state);
@@ -288,7 +299,6 @@ DenonDNS3700.applyDispState = function(row, state)
 
 DenonDNS3700.displayTickHandler0 = function()
 {
-    DenonDNS3700.tapLed(DenonDNS3700.LedMode.On);
     DenonDNS3700.processDisplayTick(0);
 }
 
@@ -323,7 +333,6 @@ DenonDNS3700.processDisplayTick = function(row)
 
 DenonDNS3700.newEmptyDispState = function(duration)
 {
-    //duration = (typeof duration == 'undefined') ? 0 : duration;
     var obj = {
         displayState : DenonDNS3700.DisplayState.Empty,
         tickInterval : duration,
@@ -332,6 +341,13 @@ DenonDNS3700.newEmptyDispState = function(duration)
         prevState: null,
     }
     return obj;
+}
+
+DenonDNS3700.clearTextDisplay = function(row, duration)
+{
+    duration = (typeof duration == 'undefined') ? 0 : duration;
+    var state = DenonDNS3700.newEmptyDispState(duration);
+    DenonDNS3700.setDispState(row, state);
 }
 
 DenonDNS3700.displayState = [
@@ -355,6 +371,13 @@ DenonDNS3700.newStaticDispState = function(col, text, duration)
     return obj;
 }
 
+DenonDNS3700.setTextDisplay = function(row, col, text, duration)
+{ 
+    duration = (typeof duration == 'undefined' ? 0 : duration);
+    var state = DenonDNS3700.newStaticDispState(col, text, duration);
+    DenonDNS3700.setDispState(row, state);
+}
+
 // blinkText(row, col, text, tickInterval, numTicks, bool restore);
 DenonDNS3700.newBlinkDispState = function(col, text, tickInterval, duration)
 {
@@ -368,4 +391,11 @@ DenonDNS3700.newBlinkDispState = function(col, text, tickInterval, duration)
         prevState: null,
     };
     return obj;
+}
+
+DenonDNS3700.blinkTextDisplay = function(row, col, text, tickInterval, duration)
+{
+    duration = (typeof duration == 'undefined' ? 0 : duration);
+    var state = DenonDNS3700.newBlinkDispState(col, text, tickInterval, duration);
+    DenonDNS3700.pushDispState(row, state);
 }
