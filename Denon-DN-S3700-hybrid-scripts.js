@@ -1,10 +1,22 @@
 function DenonDNS3700() {}
 
+/*
+  TODO: Start in a known platter state
+  TODO: UpdateLeds() function
+  TODO: Assign deck
+  TODO: Load track
+*/
+
 DenonDNS3700.CMD_CODE = 0xB0;
 
 DenonDNS3700.ButtonChange = {
     ButtonReleased: 0x00,
     ButtonPressed: 0x40
+}
+
+DenonDNS3700.KnobChange = {
+    Left: 0x7F,
+    Right: 0x00
 }
 
 DenonDNS3700.LedMode = {
