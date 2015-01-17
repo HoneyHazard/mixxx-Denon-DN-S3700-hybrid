@@ -30,6 +30,24 @@
                 </options>
             </control>
             <control>
+                <group>[Master]</group>
+                <key>DenonDNS3700.presetDataChanged</key>
+                <status>0x80</status>
+                <midino>0x52</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+
+            <control>
+                <status>0xf0</status>
+                <group>[Master]</group>
+                <key>DenonDNS3700.inboundSysex</key>
+                <options>
+                    <Script-Binding/>
+                </options>
+            </control>
+            <control>
                 <group>[Channel1]</group>
                 <key>keylock</key>
                 <status>0x90</status>
