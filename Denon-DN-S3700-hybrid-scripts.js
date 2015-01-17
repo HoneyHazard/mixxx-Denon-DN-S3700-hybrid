@@ -123,8 +123,11 @@ DenonDNS3700.textDisplayCache = [ [], [] ];
   DenonDNS3700.debugStateInfo = function(str)
 */
 
-DenonDNS3700.init = function (id)
+DenonDNS3700.init = function (id, debug)
 {
+    DenonDNS3700.id = id;
+    DenonDNS3700.debug = debug;
+    
     DenonDNS3700.clearLine(0);
     DenonDNS3700.clearLine(1);
     DenonDNS3700.tapLed(DenonDNS3700.LedMode.Off);
@@ -221,14 +224,14 @@ DenonDNS3700.clearLine = function(row, colStart, colEnd)
 {
     colStart = typeof colStart == 'undefined' ? 0 : colStart;
     colEnd = typeof colEnd == 'undefined' ? DenonDNS3700.MAX_NUM_CHARS-1 : colEnd;
-    for (i = colStart; i <= colEnd; ++i) {
+    for (var i = colStart; i <= colEnd; ++i) {
         DenonDNS3700.putChar(row, i, DenonDNS3700.EMPTY_CHAR);
     }
 }
 
 DenonDNS3700.putString = function(row, col, str)
 {
-    for (i = 0; i < str.length; ++i) {
+    for (var i = 0; i < str.length; ++i) {
         var x = col + i;
         if (x < DenonDNS3700.MAX_NUM_CHARS) {
             DenonDNS3700.putChar(row, x, str.charCodeAt(i));
