@@ -1,28 +1,54 @@
 function DenonDNS3700() {}
 
+DenonDNS3700.CMD_CODE = 0xB0;
+
+DenonDNS3700.ButtonChange = {
+    ButtonReleased: 0x00,
+    ButtonPressed: 0x40
+}
+
 DenonDNS3700.LedMode = {
     On: 0x4A,
     Off: 0x4B,
     Blink: 0x4C
 }
 
-DenonDNS3700.ButtonChange = {
-    ButtonReleased : 0x00,
-    ButtonPressed : 0x40
-}
-
-DenonDNS3700.PlaybackState = {
-    Initializing : 0,
-    Searching : 1,
-    Paused : 2,
-    Playing : 3,
-}
-
-DenonDNS3700.TextDisplayState = {
-    Empty : 0,
-    Static : 1,
-    Scroll : 2,
-    Blink: 3
+DenonDNS3700.Led = {
+    DiskEject: 0x01,
+    Playlist: 0x02,
+    PlatterModeGreen: 0x05,
+    PlatterModeOrange: 0x06,
+    Pitch: 0x07,
+    KeyAdjust: 0x08,
+    Tap: 0x09,
+    EchoLoop: 0x0B,
+    Flanger: 0x0D,
+    Filter: 0x0F,
+    AutoLoopSet: 0x2B,
+    AutoLoopExit: 0x2C,
+    One: 0x11,
+    OneDimmer: 0x12,
+    Two: 0x13,
+    TwoDimmer: 0x14,
+    Three: 0x15,
+    ThreeDimmer: 0x16,
+    NextTrack: 0x1D,
+    Parameters: 0x1E,
+    Effects: 0x2D,
+    Flip: 0x23,
+    A: 0x24,
+    ADimmer: 0x3E,
+    B: 0x40,
+    BDimmer: 0x2A,
+    Cue: 0x26,
+    Play: 0x27,
+    Brake: 0x28,
+    Dump: 0x29,
+    Reverse: 0x3A,
+    ExitReloop: 0x42,
+    LeftBezel: 0x43,
+    RightBezel: 0x44,
+    CdIn: 0x48
 }
 
 // Just hard code the midi numbers rathen than try to figure out the bizarre allocation
@@ -42,15 +68,30 @@ DenonDNS3700.CHAR_LSBS = [
 ];
 
 // TODO: Track navigation; test with both
-DenonDNS3700.CMD_CODE = 0xB0;
 DenonDNS3700.MAX_NUM_CHARS = 16;
 DenonDNS3700.EMPTY_CHAR = " ".charCodeAt(0);
+
+DenonDNS3700.PlaybackState = {
+    Initializing: 0,
+    Searching: 1,
+    Paused: 2,
+    Playing: 3,
+}
+
+DenonDNS3700.TextDisplayState = {
+    Empty: 0,
+    Static: 1,
+    Scroll: 2,
+    Blink: 3
+}
+
 DenonDNS3700.DEBUG_LEVEL = 2;
 
 DenonDNS3700.initDisplayCounter = 8;
 DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Initializing;
 DenonDNS3700.isTrackLoaded = false;
 
+DenonDNS3700.ledCache = [];
 DenonDNS3700.textDisplayState = [ null, null ];
 DenonDNS3700.textDisplayTimer = [ null, null ];
 DenonDNS3700.textDisplayCache = [ [], [] ];
@@ -113,29 +154,40 @@ DenonDNS3700.turntableOff = function()
     midi.sendShortMsg(DenonDNS3700.CMD_CODE, 0x66, 0x00);
 }
 
+DenonDNS3700.commonLedOp = function(ledValue, mode)
+{
+    if (DenonDNS3700.ledCache[ledValue] == mode) {
+        //DenonDNS3700.debugKeyInfo("already set");
+        return;
+    } else {
+        DenonDNS3700.ledCache[ledValue] = mode;
+        midi.sendShortMsg(DenonDNS3700.CMD_CODE, mode, ledValue);
+    }
+}
+
 DenonDNS3700.playLed = function(mode)
 {
-    midi.sendShortMsg(DenonDNS3700.CMD_CODE, mode, 0x27);
+    DenonDNS3700.commonLedOp(DenonDNS3700.Led.Play, mode);
 }
 
 DenonDNS3700.cueLed = function(mode)
 {
-    midi.sendShortMsg(DenonDNS3700.CMD_CODE, mode, 0x26);
+    DenonDNS3700.commonLedOp(DenonDNS3700.Led.Cue, mode);
 }
 
 DenonDNS3700.tapLed = function(mode)
 {
-    midi.sendShortMsg(DenonDNS3700.CMD_CODE, mode, 0x09);    
+    DenonDNS3700.commonLedOp(DenonDNS3700.Led.Tap, mode);
 }
 
 DenonDNS3700.effectsLed = function(mode)
 {
-    midi.sendShortMsg(DenonDNS3700.CMD_CODE, mode, 0x2D);
+    DenonDNS3700.commonLedOp(DenonDNS3700.Led.Effects, mode);
 }
 
 DenonDNS3700.parametersLed = function(mode)
 {
-    midi.sendShortMsg(DenonDNS3700.CMD_CODE, mode, 0x1E);
+    DenonDNS3700.commonLedOp(DenonDNS3700.Led.Parameters, mode);
 }
 
 DenonDNS3700.putChar = function(row, col, ch)
