@@ -84,9 +84,8 @@ DenonDNS3700.PRESET_REQUEST = [
 DenonDNS3700.PRESET_UNIT_OFFSET = 6;
 DenonDNS3700.NUMBER_OF_UNITS = 15;
 
-
-// Just hard code the midi numbers rathen than try to figure out the bizarre allocation
-// scheme by the manufacturer
+// Just hard code the midi numbers for where to send characters rathen than try to figure
+// out the bizarre allocation scheme by the manufacturer
 DenonDNS3700.CHAR_MSBS = [
     [ 0x01, 0x02, 0x03, 0x04, 0x05, 0x07, 0x08, 0x09,
       0x0A, 0x0B, 0x0C, 0x0D, 0x58, 0x59, 0x5A, 0x5B ],
@@ -117,6 +116,7 @@ DenonDNS3700.PlaybackState = {
     Searching: 1,
     Paused: 2,
     Playing: 3,
+    PlayingError: 4
 }
 
 DenonDNS3700.isTrackLoaded = false;
@@ -355,9 +355,15 @@ DenonDNS3700.updatePlaybackDisplay = function()
 {
     switch(DenonDNS3700.playbackState) {
     case DenonDNS3700.PlaybackState.Playing:
-        var debugStateInfo = "Playing";
-        var playLed = DenonDNS3700.LedMode.On;
-        var cueLed = DenonDNS3700.LedMode.Off;
+        if (DenonDNS3700.isTrackLoaded) {
+            var debugStateInfo = "Playing";
+            var playLed = DenonDNS3700.LedMode.On;
+            var cueLed = DenonDNS3700.LedMode.Off;
+        } else {
+            var debugStateInfo = "Platter ON/no track";
+            var playLed = DenonDNS3700.LedMode.Blink;
+            var cueLed = DenonDNS3700.LedMode.Blink;
+        }
         var effectsLed = DenonDNS3700.LedMode.On;
         var parametersLed = DenonDNS3700.LedMode.On;
         break;
@@ -396,11 +402,12 @@ DenonDNS3700.playButtonChanged = function(channel, control, value)
     if (value == DenonDNS3700.ButtonChange.ButtonPressed) {
         DenonDNS3700.debugKeyInfo("Play Pressed");
         if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Playing) {
-            DenonDNS3700.enterPaused();
-        } else if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Paused
-                   ||                  
-                   DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Searching
-                && DenonDNS3700.isTrackLoaded == true) {
+            if (DenonDNS3700.isTrackLoaded) {
+                DenonDNS3700.enterPaused();
+            } else {
+                DenonDNS3700.enterSearching();
+            }
+        } else {
             DenonDNS3700.enterPlaying();
         }
     }
@@ -410,11 +417,10 @@ DenonDNS3700.cueButtonChanged = function(channel, control, value)
 {
     if (value == DenonDNS3700.ButtonChange.ButtonPressed) {
         DenonDNS3700.debugKeyInfo("Cue Pressed");       
-        if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Playing
-         || DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Paused
-         || DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Searching) {
-            DenonDNS3700.enterSearching();
-        }
+ //       if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Playing
+ //        || DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Paused
+ //        || DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Searching) {
+        DenonDNS3700.enterSearching();
     }
 }
 
