@@ -2,7 +2,6 @@ function DenonDNS3700() {}
 
 /*
   TODO: Start in a known platter state
-  TODO: UpdateLeds() function
   TODO: Load track
   TODO: Scroll text
 */
@@ -186,7 +185,7 @@ DenonDNS3700.init = function (id, debug)
     DenonDNS3700.setTextDisplay(1, 0, "Preset Data...");
 
     DenonDNS3700.deck = -1;
-    DenonDNS3700.mixxxChannel = null;
+    DenonDNS3700.channel = null;
     DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Initializing;
     DenonDNS3700.startTimer(DenonDNS3700.requestPresetDataTimer, 500,
                             "DenonDNS3700.requestPresetDataTimerHandler");
@@ -196,10 +195,10 @@ DenonDNS3700.init = function (id, debug)
 DenonDNS3700.inboundSysex = function (data, length)
 {
     DenonDNS3700.deck = data[DenonDNS3700.PRESET_UNIT_OFFSET];
-    DenonDNS3700.mixxxChannel = "[Channel" + (DenonDNS3700.deck+1) + "]";
+    DenonDNS3700.channel = "[Channel" + (DenonDNS3700.deck+1) + "]";
 
     // force vinyl control??
-    engine.setValue(DenonDNS3700.mixxxChannel, "vinylcontrol_enabled", true);
+    engine.setValue(DenonDNS3700.channel, "vinylcontrol_enabled", true);
 }
 
 DenonDNS3700.requestPresetDataTimerHandler = function()
@@ -252,7 +251,16 @@ DenonDNS3700.finishInit = function (id)
 {   
     DenonDNS3700.stopTimer(DenonDNS3700.initFlashTimer);
     DenonDNS3700.setTextDisplay(0, 0, "Deck " + (DenonDNS3700.deck+1) + " Ready :)");
-    DenonDNS3700.enterPaused();
+
+    if (DenonDNS3700.isMixxxPlaying()) {
+        DenonDNS3700.enterPlaying();
+    } else {
+        if (DenonDNS3700.canMixxxPlay()) {
+            DenonDNS3700.enterSearching();
+        } else {
+            DenonDNS3700.enterPaused();
+        }
+    }
 }
 
 DenonDNS3700.turntableOn = function()
@@ -335,9 +343,14 @@ DenonDNS3700.putString = function(row, col, str)
     }
 }
 
-DenonDNS3700.isTrackLoaded = function()
+DenonDNS3700.isMixxxPlaying = function()
 {
-    return engine.getValue(DenonDNS3700.mixxxChannel, "play");
+    return engine.getValue(DenonDNS3700.channel, "play");
+}
+
+DenonDNS3700.canMixxxPlay = function()
+{
+    return engine.getValue(DenonDNS3700.channel, "play_indicator");
 }
 
 DenonDNS3700.enterPlaying = function()
@@ -362,7 +375,7 @@ DenonDNS3700.updatePlaybackDisplay = function()
 {
     switch(DenonDNS3700.playbackState) {
     case DenonDNS3700.PlaybackState.Playing:
-        if (DenonDNS3700.isTrackLoaded()) {
+        if (DenonDNS3700.isMixxxPlaying()) {
             var debugStateInfo = "Playing";
             var playLed = DenonDNS3700.LedMode.On;
             var cueLed = DenonDNS3700.LedMode.Off;
@@ -409,7 +422,7 @@ DenonDNS3700.playButtonChanged = function(channel, control, value)
     if (value == DenonDNS3700.ButtonChange.ButtonPressed) {
         DenonDNS3700.debugKeyInfo("Play Pressed");
         if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Playing) {
-            if (DenonDNS3700.isTrackLoaded()) {
+            if (DenonDNS3700.isMixxxPlaying()) {
                 DenonDNS3700.enterPaused();
             } else {
                 DenonDNS3700.enterSearching();
