@@ -335,32 +335,60 @@ DenonDNS3700.putString = function(row, col, str)
 
 DenonDNS3700.enterPlaying = function()
 {
-    DenonDNS3700.debugStateInfo("Playing");
-    DenonDNS3700.playLed(DenonDNS3700.LedMode.On);
-    DenonDNS3700.cueLed(DenonDNS3700.LedMode.Off);
-    DenonDNS3700.effectsLed(DenonDNS3700.LedMode.On);
-    DenonDNS3700.parametersLed(DenonDNS3700.LedMode.On);
     DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Playing;
+    DenonDNS3700.updatePlaybackDisplay();
 }
 
 DenonDNS3700.enterPaused = function()
 {
-    DenonDNS3700.debugStateInfo("Paused");
-    DenonDNS3700.playLed(DenonDNS3700.LedMode.Blink);
-    DenonDNS3700.cueLed(DenonDNS3700.LedMode.Off);
-    DenonDNS3700.effectsLed(DenonDNS3700.LedMode.On);
-    DenonDNS3700.parametersLed(DenonDNS3700.LedMode.On);
     DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Paused;
+    DenonDNS3700.updatePlaybackDisplay();
 }
 
 DenonDNS3700.enterSearching = function()
 {
-    DenonDNS3700.debugStateInfo("Searching");
-    DenonDNS3700.playLed(DenonDNS3700.LedMode.Off);
-    DenonDNS3700.cueLed(DenonDNS3700.LedMode.On);
-    DenonDNS3700.effectsLed(DenonDNS3700.LedMode.On);
-    DenonDNS3700.parametersLed(DenonDNS3700.LedMode.Blink);
-    DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Paused;   
+    DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Searching;
+    DenonDNS3700.updatePlaybackDisplay();
+}
+
+DenonDNS3700.updatePlaybackDisplay = function()
+{
+    switch(DenonDNS3700.playbackState) {
+    case DenonDNS3700.PlaybackState.Playing:
+        var debugStateInfo = "Playing";
+        var playLed = DenonDNS3700.LedMode.On;
+        var cueLed = DenonDNS3700.LedMode.Off;
+        var effectsLed = DenonDNS3700.LedMode.On;
+        var parametersLed = DenonDNS3700.LedMode.On;
+        break;
+    case DenonDNS3700.PlaybackState.Paused:
+        var debugStateInfo = "Paused";
+        var playLed = DenonDNS3700.LedMode.Blink;
+        var cueLed = DenonDNS3700.LedMode.Off;
+        var effectsLed = DenonDNS3700.LedMode.On;
+        var parametersLed = DenonDNS3700.LedMode.On;
+        break;
+    case DenonDNS3700.PlaybackState.Searching:
+        var debugStateInfo = "Searching";
+        var playLed = DenonDNS3700.LedMode.Off;
+        var cueLed = DenonDNS3700.LedMode.On;
+        var effectsLed = DenonDNS3700.LedMode.On;
+        var parametersLed = DenonDNS3700.LedMode.Blink;
+        break;
+    default:
+        var debugStateInfo = "Uknown State :(";
+        var playLed = DenonDNS3700.LedMode.Blink;
+        var cueLed = DenonDNS3700.LedMode.Blink;
+        var effectsLed = DenonDNS3700.LedMode.Blink;
+        var parametersLed = DenonDNS3700.LedMode.Blink;
+        break;
+    }
+
+    DenonDNS3700.debugStateInfo(debugStateInfo);
+    DenonDNS3700.playLed(playLed);
+    DenonDNS3700.cueLed(cueLed);
+    DenonDNS3700.effectsLed(effectsLed);
+    DenonDNS3700.parametersLed(parametersLed);
 }
 
 DenonDNS3700.playButtonChanged = function(channel, control, value)
