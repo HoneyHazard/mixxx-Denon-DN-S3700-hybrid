@@ -437,10 +437,9 @@ DenonDNS3700.cueButtonChanged = function(channel, control, value)
 {
     if (value == DenonDNS3700.ButtonChange.ButtonPressed) {
         DenonDNS3700.debugKeyInfo("Cue Pressed");       
- //       if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Playing
- //        || DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Paused
- //        || DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Searching) {
-        DenonDNS3700.enterSearching();
+        if (DenonDNS3700.playbackState != DenonDNS3700.PlaybackState.Initializing) {
+            DenonDNS3700.enterSearching();
+        }
     }
 }
 
