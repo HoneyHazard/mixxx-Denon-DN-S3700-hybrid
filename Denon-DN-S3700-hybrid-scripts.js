@@ -136,7 +136,7 @@ DenonDNS3700.initFlashTimer = [];
 
   Text display functions for debugging:
 
-  DenonDNS3700.debugKeyInfo = function(str)
+  DenonDNS3700.debugFlash = function(str)
   DenonDNS3700.debugStateInfo = function(str)
 */
 
@@ -160,6 +160,12 @@ DenonDNS3700.presetDataChanged = function (channel, control, value)
     DenonDNS3700.stopTimer(DenonDNS3700.requestPresetDataTimer);
     DenonDNS3700.stopTimer(DenonDNS3700.textDisplayTimer[0]);
     DenonDNS3700.stopTimer(DenonDNS3700.textDisplayTimer[1]);
+
+    // remove existing connections
+    if (DenonDNS3700.deck != -1) {
+        engine.connectControl(DenonDNS3700.mixxxChannel, "bpm",
+                              "DenonDNS3700.trackAvailableChanged", true);
+    }
 
     // re-init
     DenonDNS3700.init(DenonDNS3700.id, DenonDNS3700.debug);
@@ -191,14 +197,11 @@ DenonDNS3700.init = function (id, debug)
                             "DenonDNS3700.requestPresetDataTimerHandler");
 }
 
-// Used during initialization to obtain deck number from preset data
+// used during initialization to obtain deck number from the preset data;
 DenonDNS3700.inboundSysex = function (data, length)
 {
-    DenonDNS3700.deck = data[DenonDNS3700.PRESET_UNIT_OFFSET];
-    DenonDNS3700.channel = "[Channel" + (DenonDNS3700.deck+1) + "]";
-
-    // force vinyl control??
-    engine.setValue(DenonDNS3700.channel, "vinylcontrol_enabled", true);
+    DenonDNS3700.deck = data[DenonDNS3700.PRESET_UNIT_OFFSET] + 1;
+    DenonDNS3700.channel = "[Channel" + DenonDNS3700.deck + "]";   
 }
 
 DenonDNS3700.requestPresetDataTimerHandler = function()
@@ -224,6 +227,7 @@ DenonDNS3700.requestPresetDataTimerHandler = function()
     }
 }
 
+// timer handler for the initial startup flashiness
 DenonDNS3700.initDisplayTimerHandler = function()
 {
     if (DenonDNS3700.initDisplayCounter % 4 == 0) {
@@ -246,21 +250,29 @@ DenonDNS3700.initDisplayTimerHandler = function()
     --DenonDNS3700.initDisplayCounter;
 }
 
-// Invoked from the timer handler
+// invoked from the timer handler when the flashy sequence is done
 DenonDNS3700.finishInit = function (id)
 {   
-    DenonDNS3700.stopTimer(DenonDNS3700.initFlashTimer);
-    DenonDNS3700.setTextDisplay(0, 0, "Deck " + (DenonDNS3700.deck+1) + " Ready :)");
+    // force into vinyl control? this is convenient but questionable
+    engine.setValue(DenonDNS3700.channel, "vinylcontrol_enabled", true);
 
+    // enable connections
+    engine.connectControl(DenonDNS3700.channel, "bpm",
+                          "DenonDNS3700.trackAvailableChanged");
+
+    // enter one of the playback states
     if (DenonDNS3700.isMixxxPlaying()) {
         DenonDNS3700.enterPlaying();
     } else {
-        if (DenonDNS3700.canMixxxPlay()) {
-            DenonDNS3700.enterSearching();
-        } else {
+        if (DenonDNS3700.isTrackLoaded()) {
             DenonDNS3700.enterPaused();
+        } else {
+            DenonDNS3700.enterSearching();
         }
     }
+
+    DenonDNS3700.stopTimer(DenonDNS3700.initFlashTimer);
+    DenonDNS3700.setTextDisplay(0, 0, "Deck " + DenonDNS3700.deck + " Ready :)");
 }
 
 DenonDNS3700.turntableOn = function()
@@ -276,7 +288,7 @@ DenonDNS3700.turntableOff = function()
 DenonDNS3700.commonLedOp = function(ledValue, mode)
 {
     if (DenonDNS3700.ledCache[ledValue] == mode) {
-        //DenonDNS3700.debugKeyInfo("already set");
+        //DenonDNS3700.debugFlash("already set");
         return;
     } else {
         DenonDNS3700.ledCache[ledValue] = mode;
@@ -348,9 +360,10 @@ DenonDNS3700.isMixxxPlaying = function()
     return engine.getValue(DenonDNS3700.channel, "play");
 }
 
-DenonDNS3700.canMixxxPlay = function()
+DenonDNS3700.isTrackLoaded = function()
 {
-    return engine.getValue(DenonDNS3700.channel, "play_indicator");
+    // TODO: is there a better way to do this?
+    return (engine.getValue(DenonDNS3700.channel, "bpm") != 0);
 }
 
 DenonDNS3700.enterPlaying = function()
@@ -374,8 +387,11 @@ DenonDNS3700.enterSearching = function()
 DenonDNS3700.updatePlaybackDisplay = function()
 {
     switch(DenonDNS3700.playbackState) {
+    case DenonDNS3700.PlaybackState.Initializing:
+        return;
+        break;
     case DenonDNS3700.PlaybackState.Playing:
-        if (DenonDNS3700.isMixxxPlaying()) {
+        if (DenonDNS3700.isTrackLoaded()) {
             var debugStateInfo = "Playing";
             var playLed = DenonDNS3700.LedMode.On;
             var cueLed = DenonDNS3700.LedMode.Off;
@@ -420,7 +436,7 @@ DenonDNS3700.updatePlaybackDisplay = function()
 DenonDNS3700.playButtonChanged = function(channel, control, value)
 {
     if (value == DenonDNS3700.ButtonChange.ButtonPressed) {
-        DenonDNS3700.debugKeyInfo("Play Pressed");
+        DenonDNS3700.debugFlash("Play Pressed");
         if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Playing) {
             if (DenonDNS3700.isMixxxPlaying()) {
                 DenonDNS3700.enterPaused();
@@ -436,7 +452,7 @@ DenonDNS3700.playButtonChanged = function(channel, control, value)
 DenonDNS3700.cueButtonChanged = function(channel, control, value)
 {
     if (value == DenonDNS3700.ButtonChange.ButtonPressed) {
-        DenonDNS3700.debugKeyInfo("Cue Pressed");       
+        DenonDNS3700.debugFlash("Cue Pressed");       
         if (DenonDNS3700.playbackState != DenonDNS3700.PlaybackState.Initializing) {
             DenonDNS3700.enterSearching();
         }
@@ -583,10 +599,10 @@ DenonDNS3700.blinkTextDisplay = function(row, col, text, tickInterval, duration)
     DenonDNS3700.pushTextDisplayState(row, state);
 }
 
-DenonDNS3700.debugKeyInfo = function(str)
+DenonDNS3700.debugFlash = function(str)
 {
     if (DenonDNS3700.DEBUG_LEVEL >= 2) {
-        DenonDNS3700.blinkTextDisplay(1, 0, "[ " + str + " ]", 200, 800);
+        DenonDNS3700.blinkTextDisplay(1, 0, "[" + str + "]", 200, 800);
     }
 }
 
@@ -597,4 +613,17 @@ DenonDNS3700.debugStateInfo = function(str)
     }
 }
 
+DenonDNS3700.trackAvailableChanged = function()
+{
+    var available = DenonDNS3700.isTrackLoaded();
+    if (available) {
+        DenonDNS3700.debugFlash("Track Loaded");
+    } else {
+        DenonDNS3700.debugFlash("Track Ejected");
+        if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Paused) {
+            DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Searching;
+        }
+    }
+    DenonDNS3700.updatePlaybackDisplay();
+}
 
