@@ -103,6 +103,11 @@ DenonDNS3700.CHAR_LSBS = [
 DenonDNS3700.MAX_NUM_CHARS = 16;
 DenonDNS3700.EMPTY_CHAR = " ".charCodeAt(0);
 
+DenonDNS3700.CONNECTIONS = [
+    {control: "bpm",     handler: "trackAvailableChanged"},
+    {control: "keylock", handler: "updateKeylockDisplay"}
+];
+
 DenonDNS3700.TextDisplayState = {
     Empty: 0,
     Static: 1,
@@ -153,20 +158,20 @@ DenonDNS3700.stopTimer = function(timer) {
     }
 }
 
+DenonDNS3700.makeConnections = function(enable)
+{
+    for (var i = 0; i < DenonDNS3700.CONNECTIONS.length; ++i) {
+        var obj = DenonDNS3700.CONNECTIONS[i];
+        engine.connectControl(DenonDNS3700.channel,
+                              obj.control, "DenonDNS3700." + obj.handler,
+                              !enable);
+    }
+}
+
 DenonDNS3700.presetDataChanged = function (channel, control, value)
 {
-    // stop all timers
-    DenonDNS3700.stopTimer(DenonDNS3700.initFlashTimer);
-    DenonDNS3700.stopTimer(DenonDNS3700.requestPresetDataTimer);
-    DenonDNS3700.stopTimer(DenonDNS3700.textDisplayTimer[0]);
-    DenonDNS3700.stopTimer(DenonDNS3700.textDisplayTimer[1]);
-
-    // remove existing connections
-    if (DenonDNS3700.deck != -1) {
-        engine.connectControl(DenonDNS3700.mixxxChannel, "bpm",
-                              "DenonDNS3700.trackAvailableChanged", true);
-    }
-
+    DenonDNS3700.shutdown();
+ 
     // re-init
     DenonDNS3700.init(DenonDNS3700.id, DenonDNS3700.debug);
 }
@@ -175,18 +180,12 @@ DenonDNS3700.init = function (id, debug)
 {
     DenonDNS3700.id = id;
     DenonDNS3700.debug = debug;
-   
-    DenonDNS3700.clearLine(0);
-    DenonDNS3700.clearLine(1);
-    DenonDNS3700.tapLed(DenonDNS3700.LedMode.Off);
-    DenonDNS3700.playLed(DenonDNS3700.LedMode.Off);
-    DenonDNS3700.cueLed(DenonDNS3700.LedMode.Off);
-    DenonDNS3700.effectsLed(DenonDNS3700.LedMode.Off);
-    DenonDNS3700.parametersLed(DenonDNS3700.LedMode.Off);
+      
     // Does not work in hybrid mode :(
-    // Is there a way to start up in a known platter state?
+    // TODO: Is there a way to start up in a known platter state?
     DenonDNS3700.turntableOff();
 
+    DenonDNS3700.turnOffAllLeds();
     DenonDNS3700.setTextDisplay(0, 0, "Requesting");
     DenonDNS3700.setTextDisplay(1, 0, "Preset Data...");
 
@@ -196,6 +195,26 @@ DenonDNS3700.init = function (id, debug)
     DenonDNS3700.startTimer(DenonDNS3700.requestPresetDataTimer, 500,
                             "DenonDNS3700.requestPresetDataTimerHandler");
 }
+
+DenonDNS3700.shutdown = function ()
+{
+    // display farewells, turn off the LEDs
+    DenonDNS3700.setTextDisplay(0, 0, "Goodbye...");
+    DenonDNS3700.clearTextDisplay(1);
+    DenonDNS3700.turnOffAllLeds();
+    
+    // stop all timers
+    DenonDNS3700.stopTimer(DenonDNS3700.initFlashTimer);
+    DenonDNS3700.stopTimer(DenonDNS3700.requestPresetDataTimer);
+    DenonDNS3700.stopTimer(DenonDNS3700.textDisplayTimer[0]);
+    DenonDNS3700.stopTimer(DenonDNS3700.textDisplayTimer[1]);
+
+    // remove existing connections
+    if (DenonDNS3700.deck != -1) {
+        DenonDNS3700.makeConnections(false);
+    }
+}
+
 
 // used during initialization to obtain deck number from the preset data;
 DenonDNS3700.inboundSysex = function (data, length)
@@ -257,9 +276,8 @@ DenonDNS3700.finishInit = function (id)
     engine.setValue(DenonDNS3700.channel, "vinylcontrol_enabled", true);
 
     // enable connections
-    engine.connectControl(DenonDNS3700.channel, "bpm",
-                          "DenonDNS3700.trackAvailableChanged");
-
+    DenonDNS3700.makeConnections(true);
+        
     // enter one of the playback states
     if (DenonDNS3700.isMixxxPlaying()) {
         DenonDNS3700.enterPlaying();
@@ -271,8 +289,11 @@ DenonDNS3700.finishInit = function (id)
         }
     }
 
+    // update things tied to the mixxx deck's state
+    DenonDNS3700.updateKeylockDisplay();
+
     DenonDNS3700.stopTimer(DenonDNS3700.initFlashTimer);
-    DenonDNS3700.setTextDisplay(0, 0, "Deck " + DenonDNS3700.deck + " Ready :)");
+    DenonDNS3700.setTextDisplay(0, 0, "Deck " + DenonDNS3700.deck + " Online :)");
 }
 
 DenonDNS3700.turntableOn = function()
@@ -319,6 +340,10 @@ DenonDNS3700.effectsLed = function(mode)
 DenonDNS3700.parametersLed = function(mode)
 {
     DenonDNS3700.commonLedOp(DenonDNS3700.Led.Parameters, mode);
+}
+
+DenonDNS3700.keyLed = function(mode) {
+    DenonDNS3700.commonLedOp(DenonDNS3700.Led.KeyAdjust, mode);
 }
 
 DenonDNS3700.putChar = function(row, col, ch)
@@ -431,6 +456,20 @@ DenonDNS3700.updatePlaybackDisplay = function()
     DenonDNS3700.cueLed(cueLed);
     DenonDNS3700.effectsLed(effectsLed);
     DenonDNS3700.parametersLed(parametersLed);
+}
+
+DenonDNS3700.updateKeylockDisplay = function()
+{
+    var keyOn = engine.getValue(DenonDNS3700.channel, "keylock");
+    DenonDNS3700.keyLed(keyOn ? DenonDNS3700.LedMode.On : DenonDNS3700.LedMode.Off);
+}
+
+DenonDNS3700.turnOffAllLeds = function()
+{
+    for (var key in DenonDNS3700.Led) {
+        var led = DenonDNS3700.Led[key];
+        DenonDNS3700.commonLedOp(led, DenonDNS3700.LedMode.Off);
+    }
 }
 
 DenonDNS3700.playButtonChanged = function(channel, control, value)
