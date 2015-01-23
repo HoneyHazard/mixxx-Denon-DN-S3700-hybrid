@@ -103,7 +103,7 @@ DenonDNS3700.CHAR_LSBS = [
 DenonDNS3700.MAX_NUM_CHARS = 16;
 DenonDNS3700.EMPTY_CHAR = " ".charCodeAt(0);
 
-DenonDNS3700.CONNECTIONS = [
+DenonDNS3700.CHANNEL_CONNECTIONS = [
     {control: "bpm",     handler: "trackAvailableChanged"},
     {control: "keylock", handler: "updateKeylockDisplay"}
 ];
@@ -158,10 +158,10 @@ DenonDNS3700.stopTimer = function(timer) {
     }
 }
 
-DenonDNS3700.makeConnections = function(enable)
+DenonDNS3700.makeChannelConnetions = function(enable)
 {
-    for (var i = 0; i < DenonDNS3700.CONNECTIONS.length; ++i) {
-        var obj = DenonDNS3700.CONNECTIONS[i];
+    for (var i = 0; i < DenonDNS3700.CHANNEL_CONNECTIONS.length; ++i) {
+        var obj = DenonDNS3700.CHANNEL_CONNECTIONS[i];
         engine.connectControl(DenonDNS3700.channel,
                               obj.control, "DenonDNS3700." + obj.handler,
                               !enable);
@@ -211,7 +211,7 @@ DenonDNS3700.shutdown = function ()
 
     // remove existing connections
     if (DenonDNS3700.deck != -1) {
-        DenonDNS3700.makeConnections(false);
+        DenonDNS3700.makeChannelConnetions(false);
     }
 }
 
@@ -276,7 +276,7 @@ DenonDNS3700.finishInit = function (id)
     engine.setValue(DenonDNS3700.channel, "vinylcontrol_enabled", true);
 
     // enable connections
-    DenonDNS3700.makeConnections(true);
+    DenonDNS3700.makeChannelConnetions(true);
         
     // enter one of the playback states
     if (DenonDNS3700.isMixxxPlaying()) {
