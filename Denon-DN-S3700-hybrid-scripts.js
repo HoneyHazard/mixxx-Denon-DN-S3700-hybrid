@@ -480,14 +480,19 @@ DenonDNS3700.parametersRotaryChanged = function(channel, control, value)
 {
     if (value == DenonDNS3700.RotaryChange.Left) {
         DenonDNS3700.debugFlash("Params Left");
+        engine.setValue("[Playlist]", "SelectPrevTrack", 1);
     } else {
         DenonDNS3700.debugFlash("Params Right");
+        engine.setValue("[Playlist]", "SelectNextTrack", 1);
     }
 }
 
 DenonDNS3700.parametersButtonPressed = function(channel, control, value)
 {
     DenonDNS3700.debugFlash("Params Pressed");
+    if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Searching) {
+        engine.setValue(DenonDNS3700.channel, "LoadSelectedTrack", 1);
+    }
 }
 
 DenonDNS3700.playButtonChanged = function(channel, control, value)
