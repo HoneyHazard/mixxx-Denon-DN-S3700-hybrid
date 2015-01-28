@@ -653,7 +653,13 @@ DenonDNS3700.blinkTextDisplay = function(row, col, text, tickInterval, duration)
 {
     duration = (typeof duration == 'undefined' ? 0 : duration);
     var state = DenonDNS3700.newBlinkDispState(col, text, tickInterval, duration);
-    DenonDNS3700.pushTextDisplayState(row, state);
+    if (DenonDNS3700.textDisplayState[row] != null
+     && DenonDNS3700.textDisplayState[row].textDisplayState == state.textDisplayState) {
+        state.prevState = DenonDNS3700.textDisplayState[row].prevState;
+        DenonDNS3700.setTextDisplayState(row, state);
+    } else {
+        DenonDNS3700.pushTextDisplayState(row, state);
+    }
 }
 
 DenonDNS3700.debugFlash = function(str)
