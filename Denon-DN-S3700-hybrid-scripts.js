@@ -490,7 +490,9 @@ DenonDNS3700.parametersRotaryChanged = function(channel, control, value)
 DenonDNS3700.parametersButtonPressed = function(channel, control, value)
 {
     DenonDNS3700.debugFlash("Params Pressed");
-    if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Searching) {
+    if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Playing) {
+        DenonDNS3700.userFlash("Play Lock");
+    } else {
         engine.setValue(DenonDNS3700.channel, "LoadSelectedTrack", 1);
     }
 }
@@ -670,8 +672,13 @@ DenonDNS3700.blinkTextDisplay = function(row, col, text, tickInterval, duration)
 DenonDNS3700.debugFlash = function(str)
 {
     if (DenonDNS3700.DEBUG_LEVEL >= 2) {
-        DenonDNS3700.blinkTextDisplay(1, 0, "[" + str + "]", 200, 800);
+        DenonDNS3700.blinkTextDisplay(1, 0, "<" + str + ">", 200, 800);
     }
+}
+
+DenonDNS3700.userFlash = function(str)
+{
+    DenonDNS3700.blinkTextDisplay(1, 0, "[" + str + "]", 200, 800);
 }
 
 DenonDNS3700.debugStateInfo = function(str)
