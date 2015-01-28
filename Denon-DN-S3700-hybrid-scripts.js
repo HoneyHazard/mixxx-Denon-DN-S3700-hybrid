@@ -350,6 +350,11 @@ DenonDNS3700.keyLed = function(mode) {
     DenonDNS3700.commonLedOp(DenonDNS3700.Led.KeyAdjust, mode);
 }
 
+DenonDNS3700.ejectLed = function(mode)
+{
+    DenonDNS3700.commonLedOp(DenonDNS3700.Led.DiskEject, mode);
+}
+
 DenonDNS3700.putChar = function(row, col, ch)
 {
     if (DenonDNS3700.textDisplayCache[row][col] == ch) {
@@ -452,14 +457,19 @@ DenonDNS3700.updatePlaybackDisplay = function()
         var cueLed = DenonDNS3700.LedMode.Blink;
         var effectsLed = DenonDNS3700.LedMode.Blink;
         var parametersLed = DenonDNS3700.LedMode.Blink;
+        var trackLed = DenonDNS3700.LedMode.Blink;
         break;
     }
 
+    var ejectLed = DenonDNS3700.isTrackLoaded() ? DenonDNS3700.LedMode.On
+                                                : DenonDNS3700.LedMode.Off;
+    
     DenonDNS3700.debugStateInfo(debugStateInfo);
     DenonDNS3700.playLed(playLed);
     DenonDNS3700.cueLed(cueLed);
     DenonDNS3700.effectsLed(effectsLed);
     DenonDNS3700.parametersLed(parametersLed);
+    DenonDNS3700.ejectLed(ejectLed);
 }
 
 DenonDNS3700.updateKeylockDisplay = function()
@@ -473,6 +483,15 @@ DenonDNS3700.turnOffAllLeds = function()
     for (var key in DenonDNS3700.Led) {
         var led = DenonDNS3700.Led[key];
         DenonDNS3700.commonLedOp(led, DenonDNS3700.LedMode.Off);
+    }
+}
+
+DenonDNS3700.ejectButtonPressed = function(channel, control, value) {
+    if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Playing
+     && DenonDNS3700.isTrackLoaded() == true) {
+        DenonDNS3700.userFlash("Play Lock");
+    } else {
+        engine.setValue(DenonDNS3700.channel, "eject", 1);
     }
 }
 
@@ -490,10 +509,12 @@ DenonDNS3700.parametersRotaryChanged = function(channel, control, value)
 DenonDNS3700.parametersButtonPressed = function(channel, control, value)
 {
     DenonDNS3700.debugFlash("Params Pressed");
-    if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Playing) {
+    if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Playing
+     && DenonDNS3700.isTrackLoaded() == true) {
         DenonDNS3700.userFlash("Play Lock");
     } else {
         engine.setValue(DenonDNS3700.channel, "LoadSelectedTrack", 1);
+        DenonDNS3700.ejectLed(DenonDNS3700.LedMode.Blink);
     }
 }
 
