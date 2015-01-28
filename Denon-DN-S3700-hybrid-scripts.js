@@ -4,6 +4,10 @@ function DenonDNS3700() {}
   TODO: Start in a known platter state
   TODO: Load track
   TODO: Scroll text
+  TODO: Display loaded track
+
+  Later awesome features:
+  TODO: Control sample deck
 */
 
 DenonDNS3700.DEBUG_LEVEL = 2;
@@ -15,7 +19,7 @@ DenonDNS3700.ButtonChange = {
     ButtonPressed: 0x40
 }
 
-DenonDNS3700.KnobChange = {
+DenonDNS3700.RotaryChange = {
     Left: 0x7F,
     Right: 0x00
 }
@@ -470,6 +474,20 @@ DenonDNS3700.turnOffAllLeds = function()
         var led = DenonDNS3700.Led[key];
         DenonDNS3700.commonLedOp(led, DenonDNS3700.LedMode.Off);
     }
+}
+
+DenonDNS3700.parametersRotaryChanged = function(channel, control, value)
+{
+    if (value == DenonDNS3700.RotaryChange.Left) {
+        DenonDNS3700.debugFlash("Params Left");
+    } else {
+        DenonDNS3700.debugFlash("Params Right");
+    }
+}
+
+DenonDNS3700.parametersButtonPressed = function(channel, control, value)
+{
+    DenonDNS3700.debugFlash("Params Pressed");
 }
 
 DenonDNS3700.playButtonChanged = function(channel, control, value)
