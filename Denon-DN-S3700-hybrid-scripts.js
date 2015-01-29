@@ -133,10 +133,10 @@ DenonDNS3700.requestPresetDataTimer = [];
 DenonDNS3700.initFlashTimer = [];
 
 DenonDNS3700.CHANNEL_CONNECTIONS = [
-    {control: "bpm",     handler: "trackAvailableChanged"},
-    {control: "eject",   handler: "trackAvailableChanged"},
+    {control: "bpm",         handler: "trackAvailableChanged"},
+    {control: "eject",       handler: "trackAvailableChanged"},
     {control: "beat_active", handler: "beatActiveChanged"},
-    {control: "keylock", handler: "updateKeylockDisplay"}
+    {control: "keylock",     handler: "updateKeylockDisplay"}
 ];
 
 /*
@@ -249,7 +249,7 @@ DenonDNS3700.requestPresetDataTimerHandler = function()
                                               "Select 1 through " + (maxAllowedDecks+1));
         } else {
             DenonDNS3700.initDisplayCounter = 8;
-            DenonDNS3700.startTimer(DenonDNS3700.initFlashTimer, 250,
+            DenonDNS3700.startTimer(DenonDNS3700.initFlashTimer, 400,
                                     "DenonDNS3700.initDisplayTimerHandler");
         }
     }
@@ -259,8 +259,10 @@ DenonDNS3700.requestPresetDataTimerHandler = function()
 DenonDNS3700.initDisplayTimerHandler = function()
 {
     if (DenonDNS3700.initDisplayCounter % 4 == 0) {
-        DenonDNS3700.setTextDisplay(0, 0, "/    Hello,    \\");
-        DenonDNS3700.setTextDisplay(1, 0, "\\    Mixxx     /");
+        //DenonDNS3700.setTextDisplay(0, 0, "/    Hello,    \\");
+        //DenonDNS3700.setTextDisplay(1, 0, "\\    Mixxx     /");
+        DenonDNS3700.setTextDisplay(0, 0, "Hello, Mixxx");
+        DenonDNS3700.setTextDisplay(1, 0, "Deck " + DenonDNS3700.deck + " Online :)");
         DenonDNS3700.tapLed(DenonDNS3700.LedMode.On);
     } else if (DenonDNS3700.initDisplayCounter % 2 == 0) {
         DenonDNS3700.setTextDisplay(0, 0, "12345678901234");
@@ -298,12 +300,11 @@ DenonDNS3700.finishInit = function (id)
         }
     }
 
+    DenonDNS3700.stopTimer(DenonDNS3700.initFlashTimer);
+
     // update things tied to the mixxx deck's state
     DenonDNS3700.updateKeylockDisplay();
-
-    DenonDNS3700.stopTimer(DenonDNS3700.initFlashTimer);
-    DenonDNS3700.setTextDisplay(0, 0, "Deck " + DenonDNS3700.deck + " Online :)");
-    //DenonDNS3700.userScroll("12345678901234abcde", "prefix: ");
+    DenonDNS3700.trackAvailableChanged();
 }
 
 DenonDNS3700.turntableOn = function()
@@ -526,6 +527,7 @@ DenonDNS3700.parametersButtonPressed = function(channel, control, value)
     } else {
         engine.setValue(DenonDNS3700.channel, "LoadSelectedTrack", 1);
         DenonDNS3700.enterSearching();
+        DenonDNS3700.setTextDisplay(0, 0, "Loading track...");
         DenonDNS3700.ejectLed(DenonDNS3700.LedMode.Blink);
         DenonDNS3700.parametersLed(DenonDNS3700.LedMode.On);
     }
@@ -763,11 +765,6 @@ DenonDNS3700.scrollTextDisplay = function(row, text, tickInterval, duration, pre
     }
 }
 
-DenonDNS3700.userScroll = function(str, prefix)
-{
-    DenonDNS3700.scrollTextDisplay(0, str, 500, 0, prefix);
-}
-
 DenonDNS3700.debugFlash = function(str)
 {
     if (DenonDNS3700.DEBUG_LEVEL >= 2) {
@@ -787,13 +784,21 @@ DenonDNS3700.debugStateInfo = function(str)
     }
 }
 
+DenonDNS3700.userScroll = function(str, prefix)
+{
+    DenonDNS3700.scrollTextDisplay(0, str, 300, 0, prefix);
+}
+
 DenonDNS3700.trackAvailableChanged = function()
 {
     var available = DenonDNS3700.isTrackLoaded();
     if (available) {
         DenonDNS3700.userFlash("Track Loaded");
+        DenonDNS3700.userScroll("Various Artists - Track Name Placeholder");
     } else {
         DenonDNS3700.userFlash("Track Ejected");
+        //DenonDNS3700.setTextDisplay(0, 0, "Deck " + DenonDNS3700.deck + " Online :)");
+        DenonDNS3700.setTextDisplay(0, 0, "No track loaded.");
         if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Paused) {
             DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Searching;
         }
