@@ -6,6 +6,9 @@ function DenonDNS3700() {}
   TODO: Scroll text
   TODO: Display loaded track
 
+  Bugs:
+  TODO: Eject sometimes keeps blinking after the track is loaded
+
   Later awesome features:
   TODO: Control sample deck
 */
@@ -109,6 +112,7 @@ DenonDNS3700.EMPTY_CHAR = " ".charCodeAt(0);
 
 DenonDNS3700.CHANNEL_CONNECTIONS = [
     {control: "bpm",     handler: "trackAvailableChanged"},
+    {control: "eject",   handler: "trackAvailableChanged"},
     {control: "keylock", handler: "updateKeylockDisplay"}
 ];
 
@@ -429,13 +433,14 @@ DenonDNS3700.updatePlaybackDisplay = function()
             var debugStateInfo = "Playing";
             var playLed = DenonDNS3700.LedMode.On;
             var cueLed = DenonDNS3700.LedMode.Off;
+            var parametersLed = DenonDNS3700.LedMode.On;
         } else {
             var debugStateInfo = "Platter ON/no track";
             var playLed = DenonDNS3700.LedMode.Blink;
             var cueLed = DenonDNS3700.LedMode.Blink;
+            var parametersLed = DenonDNS3700.LedMode.Blink;
         }
         var effectsLed = DenonDNS3700.LedMode.On;
-        var parametersLed = DenonDNS3700.LedMode.On;
         break;
     case DenonDNS3700.PlaybackState.Paused:
         var debugStateInfo = "Paused";
@@ -449,7 +454,11 @@ DenonDNS3700.updatePlaybackDisplay = function()
         var playLed = DenonDNS3700.LedMode.Off;
         var cueLed = DenonDNS3700.LedMode.On;
         var effectsLed = DenonDNS3700.LedMode.On;
-        var parametersLed = DenonDNS3700.LedMode.Blink;
+        if (DenonDNS3700.isTrackLoaded()) {
+            var parametersLed = DenonDNS3700.LedMode.On;
+        } else {
+            var parametersLed = DenonDNS3700.LedMode.Blink;
+        }
         break;
     default:
         var debugStateInfo = "Uknown State :(";
@@ -515,6 +524,7 @@ DenonDNS3700.parametersButtonPressed = function(channel, control, value)
     } else {
         engine.setValue(DenonDNS3700.channel, "LoadSelectedTrack", 1);
         DenonDNS3700.ejectLed(DenonDNS3700.LedMode.Blink);
+        DenonDNS3700.parametersLed(DenonDNS3700.On);
     }
 }
 
@@ -713,9 +723,9 @@ DenonDNS3700.trackAvailableChanged = function()
 {
     var available = DenonDNS3700.isTrackLoaded();
     if (available) {
-        DenonDNS3700.debugFlash("Track Loaded");
+        DenonDNS3700.userFlash("Track Loaded");
     } else {
-        DenonDNS3700.debugFlash("Track Ejected");
+        DenonDNS3700.userFlash("Track Ejected");
         if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Paused) {
             DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Searching;
         }

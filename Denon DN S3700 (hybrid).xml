@@ -21,18 +21,18 @@
             </control>
             <control>
                 <group>[Master]</group>
-                <key>DenonDNS3700.presetDataChanged</key>
-                <status>0x80</status>
-                <midino>0x52</midino>
+                <key>DenonDNS3700.parametersRotaryChanged</key>
+                <status>0xB0</status>
+                <midino>0x54</midino>
                 <options>
                     <script-binding/>
                 </options>
             </control>
             <control>
                 <group>[Master]</group>
-                <key>DenonDNS3700.ejectButtonPressed</key>
-                <status>0x90</status>
-                <midino>0x01</midino>
+                <key>DenonDNS3700.presetDataChanged</key>
+                <status>0x80</status>
+                <midino>0x52</midino>
                 <options>
                     <script-binding/>
                 </options>
@@ -57,18 +57,18 @@
             </control>
             <control>
                 <group>[Master]</group>
-                <key>DenonDNS3700.parametersButtonPressed</key>
+                <key>DenonDNS3700.ejectButtonPressed</key>
                 <status>0x90</status>
-                <midino>0x28</midino>
+                <midino>0x01</midino>
                 <options>
                     <script-binding/>
                 </options>
             </control>
             <control>
                 <group>[Master]</group>
-                <key>DenonDNS3700.parametersRotaryChanged</key>
-                <status>0xB0</status>
-                <midino>0x54</midino>
+                <key>DenonDNS3700.parametersButtonPressed</key>
+                <status>0x90</status>
+                <midino>0x28</midino>
                 <options>
                     <script-binding/>
                 </options>
