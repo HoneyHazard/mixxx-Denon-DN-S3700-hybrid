@@ -8,6 +8,8 @@ function DenonDNS3700() {}
 
   Bugs:
   TODO: Eject sometimes keeps blinking after the track is loaded
+  TODO: Params sometimes keeps blinking after clicking on it to load track
+
 
   Later awesome features:
   TODO: Control sample deck
@@ -113,6 +115,7 @@ DenonDNS3700.EMPTY_CHAR = " ".charCodeAt(0);
 DenonDNS3700.CHANNEL_CONNECTIONS = [
     {control: "bpm",     handler: "trackAvailableChanged"},
     {control: "eject",   handler: "trackAvailableChanged"},
+    {control: "beat_active", handler: "beatActiveChanged"},
     {control: "keylock", handler: "updateKeylockDisplay"}
 ];
 
@@ -733,3 +736,8 @@ DenonDNS3700.trackAvailableChanged = function()
     DenonDNS3700.updatePlaybackDisplay();
 }
 
+DenonDNS3700.beatActiveChanged = function(value)
+{    
+    DenonDNS3700.tapLed(value ? DenonDNS3700.LedMode.On
+                              : DenonDNS3700.LedMode.Off);
+}
