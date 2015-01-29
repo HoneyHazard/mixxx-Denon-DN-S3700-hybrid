@@ -2,12 +2,8 @@ function DenonDNS3700() {}
 
 /*
   TODO: Start in a known platter state
-  TODO: Load track
-  TODO: Scroll text
-  TODO: Display loaded track
-
-  Bugs:
-  TODO: How to detect failure to load track?
+  TODO: Display loaded track (mixxx devs)
+  TODO: Better handling of wether the track is loaded, not loaded, or loading
 
   Later awesome features:
   TODO: Control sample deck
@@ -145,13 +141,14 @@ DenonDNS3700.CHANNEL_CONNECTIONS = [
   DenonDNS3700.clearTextDisplay = function(row, duration)
   DenonDNS3700.setTextDisplay = function(row, col, text, duration)
   DenonDNS3700.blinkTextDisplay = function(row, col, text, tickInterval, duration)
-
-  TODO: DenonDNS3700.scrollTextDisplay = function(row, text, prefix)
+  DenonDNS3700.scrollTextDisplay = function(row, text, prefix, tickInterval, duration)
 
   Text display functions for debugging:
 
   DenonDNS3700.debugFlash = function(str)
   DenonDNS3700.debugStateInfo = function(str)
+  DenonDNS3700.userFlash = function(str)
+  DenonDNS3700.userScroll = function(str, [prefix])
 */
 
 DenonDNS3700.startTimer = function(timer, delay, handler)
@@ -249,7 +246,7 @@ DenonDNS3700.requestPresetDataTimerHandler = function()
                                               "Select 1 through " + (maxAllowedDecks+1));
         } else {
             DenonDNS3700.initDisplayCounter = 8;
-            DenonDNS3700.startTimer(DenonDNS3700.initFlashTimer, 400,
+            DenonDNS3700.startTimer(DenonDNS3700.initFlashTimer, 500,
                                     "DenonDNS3700.initDisplayTimerHandler");
         }
     }
@@ -265,8 +262,8 @@ DenonDNS3700.initDisplayTimerHandler = function()
         DenonDNS3700.setTextDisplay(1, 0, "Deck " + DenonDNS3700.deck + " Online :)");
         DenonDNS3700.tapLed(DenonDNS3700.LedMode.On);
     } else if (DenonDNS3700.initDisplayCounter % 2 == 0) {
-        DenonDNS3700.setTextDisplay(0, 0, "12345678901234");
-        DenonDNS3700.setTextDisplay(1, 0, "ABCDEFGHIJKLMN");
+        DenonDNS3700.setTextDisplay(0, 0, "123456789012345678");
+        DenonDNS3700.setTextDisplay(1, 0, "ABCDEFGHIJKLMNOPQR");
         DenonDNS3700.tapLed(DenonDNS3700.LedMode.On);
     } else {
         DenonDNS3700.clearTextDisplay(0);
