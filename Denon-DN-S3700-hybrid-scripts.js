@@ -7,9 +7,7 @@ function DenonDNS3700() {}
   TODO: Display loaded track
 
   Bugs:
-  TODO: Eject sometimes keeps blinking after the track is loaded
-  TODO: Params sometimes keeps blinking after clicking on it to load track
-
+  TODO: How to detect failure to load track?
 
   Later awesome features:
   TODO: Control sample deck
@@ -108,16 +106,9 @@ DenonDNS3700.CHAR_LSBS = [
       0x36, 0x37, 0x38, 0x39, 0x70, 0x75, 0x76, 0x77 ]
 ];
 
-// TODO: Track navigation; test with both
 DenonDNS3700.MAX_NUM_CHARS = 16;
 DenonDNS3700.EMPTY_CHAR = " ".charCodeAt(0);
-
-DenonDNS3700.CHANNEL_CONNECTIONS = [
-    {control: "bpm",     handler: "trackAvailableChanged"},
-    {control: "eject",   handler: "trackAvailableChanged"},
-    {control: "beat_active", handler: "beatActiveChanged"},
-    {control: "keylock", handler: "updateKeylockDisplay"}
-];
+DenonDNS3700.SCROLL_REST = 4; // in scroll ticks
 
 DenonDNS3700.TextDisplayState = {
     Empty: 0,
@@ -140,6 +131,13 @@ DenonDNS3700.textDisplayTimer = [ {}, {} ];
 
 DenonDNS3700.requestPresetDataTimer = [];
 DenonDNS3700.initFlashTimer = [];
+
+DenonDNS3700.CHANNEL_CONNECTIONS = [
+    {control: "bpm",     handler: "trackAvailableChanged"},
+    {control: "eject",   handler: "trackAvailableChanged"},
+    {control: "beat_active", handler: "beatActiveChanged"},
+    {control: "keylock", handler: "updateKeylockDisplay"}
+];
 
 /*
   Current text display functions:
@@ -203,7 +201,7 @@ DenonDNS3700.init = function (id, debug)
     DenonDNS3700.deck = -1;
     DenonDNS3700.channel = null;
     DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Initializing;
-    DenonDNS3700.startTimer(DenonDNS3700.requestPresetDataTimer, 500,
+    DenonDNS3700.startTimer(DenonDNS3700.requestPresetDataTimer, 250,
                             "DenonDNS3700.requestPresetDataTimerHandler");
 }
 
@@ -251,7 +249,7 @@ DenonDNS3700.requestPresetDataTimerHandler = function()
                                               "Select 1 through " + (maxAllowedDecks+1));
         } else {
             DenonDNS3700.initDisplayCounter = 8;
-            DenonDNS3700.startTimer(DenonDNS3700.initFlashTimer, 500,
+            DenonDNS3700.startTimer(DenonDNS3700.initFlashTimer, 250,
                                     "DenonDNS3700.initDisplayTimerHandler");
         }
     }
@@ -305,6 +303,7 @@ DenonDNS3700.finishInit = function (id)
 
     DenonDNS3700.stopTimer(DenonDNS3700.initFlashTimer);
     DenonDNS3700.setTextDisplay(0, 0, "Deck " + DenonDNS3700.deck + " Online :)");
+    //DenonDNS3700.userScroll("12345678901234abcde", "prefix: ");
 }
 
 DenonDNS3700.turntableOn = function()
@@ -526,8 +525,9 @@ DenonDNS3700.parametersButtonPressed = function(channel, control, value)
         DenonDNS3700.userFlash("Play Lock");
     } else {
         engine.setValue(DenonDNS3700.channel, "LoadSelectedTrack", 1);
+        DenonDNS3700.enterSearching();
         DenonDNS3700.ejectLed(DenonDNS3700.LedMode.Blink);
-        DenonDNS3700.parametersLed(DenonDNS3700.On);
+        DenonDNS3700.parametersLed(DenonDNS3700.LedMode.On);
     }
 }
 
@@ -587,9 +587,14 @@ DenonDNS3700.applyTextDisplayState = function(row, state)
         DenonDNS3700.clearLine(row);
         DenonDNS3700.putString(row, state.colStart, state.text);
         break;
+    case DenonDNS3700.TextDisplayState.Scroll:
+        DenonDNS3700.clearLine(row);
+        DenonDNS3700.putString(row, 0, state.prefix);
+        DenonDNS3700.putString(row, state.colStart, state.text);
     }
 
-    if (state.tickInterval > 0 && state.numTicks > 0) {
+    if (state.tickInterval > 0 && state.numTicks > 0
+     || state.textDisplayState == DenonDNS3700.TextDisplayState.Scroll) {
         DenonDNS3700.startTimer(DenonDNS3700.textDisplayTimer[row], state.tickInterval,
                                 "DenonDNS3700.textDisplayTickHandler" + row);
     }
@@ -617,7 +622,30 @@ DenonDNS3700.processTextDisplayTick = function(row)
            DenonDNS3700.putString(row, state.colStart, state.text);
         }
         break;
+    case DenonDNS3700.TextDisplayState.Scroll:
+        // rest first, then scroll
+        var remainderTicks = state.currTick % state.periodTicks;
+        var periodIdx = (state.currTick - remainderTicks) / state.periodTicks;
+        var offset = remainderTicks - DenonDNS3700.SCROLL_REST;
+        if (offset < 0) {
+            offset = 0;
+        }
+        if (periodIdx % 2 == 0) { // scroll forward
+            var i = 0;
+            for (var col = state.colStart; col < DenonDNS3700.MAX_NUM_CHARS; ++col) {
+                DenonDNS3700.putChar(row, col, state.text.charCodeAt(i + offset));
+                i++;
+            }
+         } else { // scroll back
+            var i = state.text.length - 1;
+            for (var col = DenonDNS3700.MAX_NUM_CHARS-1; col >= state.colStart; --col) {
+                DenonDNS3700.putChar(row, col, state.text.charCodeAt(i - offset));
+                i--;
+            }
+        }
+        break;
     }
+    
     if (state.numTicks > 0 && state.currTick >= state.numTicks) {
         DenonDNS3700.stopTimer(DenonDNS3700.textDisplayTimer[row]);
         var prevState = state.prevState;
@@ -701,6 +729,43 @@ DenonDNS3700.blinkTextDisplay = function(row, col, text, tickInterval, duration)
     } else {
         DenonDNS3700.pushTextDisplayState(row, state);
     }
+}
+
+DenonDNS3700.newScrollDispState = function(text, tickInterval, duration, prefix)
+{   
+    var obj = {
+        textDisplayState : DenonDNS3700.TextDisplayState.Scroll,
+        colStart : prefix.length,
+        text : text,
+        tickInterval : tickInterval,
+        numTicks : duration / tickInterval,
+        currTick : 0,
+        prevState: null,
+        prefix : prefix,
+        periodTicks : DenonDNS3700.SCROLL_REST + text.length
+                      - (DenonDNS3700.MAX_NUM_CHARS - prefix.length)
+    };
+    return obj;
+}
+
+DenonDNS3700.scrollTextDisplay = function(row, text, tickInterval, duration, prefix)
+{
+    prefix = (typeof prefix == 'undefined' ? "" : prefix);
+    duration = (typeof duration == 'undefined' ? 0 : duration);
+    var newState = DenonDNS3700.newScrollDispState(text, tickInterval,
+                                                   duration, prefix);
+    if (DenonDNS3700.textDisplayState[row] != null
+     && DenonDNS3700.textDisplayState[row].tickInterval > 0
+     && DenonDNS3700.textDisplayState[row].numTicks > 0) {
+        DenonDNS3700.textDisplayState[row].prevState = newState;
+    } else {
+        DenonDNS3700.setTextDisplayState(row, newState);
+    }
+}
+
+DenonDNS3700.userScroll = function(str, prefix)
+{
+    DenonDNS3700.scrollTextDisplay(0, str, 500, 0, prefix);
 }
 
 DenonDNS3700.debugFlash = function(str)
