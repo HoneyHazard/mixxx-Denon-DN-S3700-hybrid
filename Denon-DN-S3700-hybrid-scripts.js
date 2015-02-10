@@ -1,6 +1,7 @@
 function DenonDNS3700() {}
 
 /*
+  TODO: Display bpm, key
   TODO: Start in a known platter state
   TODO: Display loaded track (mixxx devs)
   TODO: Better handling of wether the track is loaded, not loaded, or loading
@@ -118,6 +119,14 @@ DenonDNS3700.PlaybackState = {
     Searching: 1,
     Paused: 2,
     Playing: 3,
+}
+
+DenonDNS3700.TrackState = {
+    Initializing : 0,
+    NotLoaded : 1
+    Loading : 2,
+    Loaded : 3,
+    Fading : 4
 }
 
 DenonDNS3700.ledCache = [];
