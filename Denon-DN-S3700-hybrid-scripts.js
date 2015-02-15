@@ -123,7 +123,7 @@ DenonDNS3700.PlaybackState = {
 
 DenonDNS3700.TrackState = {
     Initializing : 0,
-    NotLoaded : 1
+    NotLoaded : 1,
     Loading : 2,
     Loaded : 3,
     Fading : 4
