@@ -140,9 +140,9 @@ DenonDNS3700.requestPresetDataTimer = [];
 DenonDNS3700.initFlashTimer = [];
 
 DenonDNS3700.CHANNEL_CONNECTIONS = [
-    {control: "bpm",         handler: "trackAvailableChanged"},
-    {control: "eject",       handler: "trackAvailableChanged"},
-    {control: "beat_active", handler: "beatActiveChanged"},
+    {control: "bpm",         handler: "mixxxBpmHandler"},
+    {control: "eject",       handler: "mixxxEjectHandler"},
+    {control: "beat_active", handler: "mixxxBeatActiveHandler"},
     {control: "keylock",     handler: "updateKeylockDisplay"}
 ];
 
@@ -282,7 +282,7 @@ DenonDNS3700.finishInit = function (id)
     // enable connections
     DenonDNS3700.makeChannelConnetions(true);
 
-    var bpmAvailable = DenonDNS3700.isBpmAvailable();
+    var bpmAvailable = DenonDNS3700.mixxxBpmIsAvailable();
 
     // try to determine the track state
     if (bpmAvailable) {
@@ -292,7 +292,7 @@ DenonDNS3700.finishInit = function (id)
     }
     
     // enter one of the playback states
-    if (DenonDNS3700.isMixxxPlaying()) {
+    if (DenonDNS3700.mixxxIsPlaying()) {
         DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Playing;        
     } else {
         if (bpmAvailable) {
@@ -405,14 +405,15 @@ DenonDNS3700.putString = function(row, col, str)
     }
 }
 
-DenonDNS3700.isMixxxPlaying = function()
+DenonDNS3700.mixxxIsPlaying = function()
 {
     return engine.getValue(DenonDNS3700.channel, "play");
 }
 
-DenonDNS3700.isBpmAvailable = function()
+DenonDNS3700.mixxxBpmIsAvailable = function()
 {
-    return engine.getValue(DenonDNS3700.channel, "bpm") != 0;
+    var value = engine.getValue(DenonDNS3700.channel, "bpm");
+    return value != null && value != 0;
 }
 
 DenonDNS3700.isInitializing = function()
@@ -521,11 +522,14 @@ DenonDNS3700.parametersButtonPressed = function(channel, control, value)
      && DenonDNS3700.trackState == DenonDNS3700.TrackState.Loaded) {
         DenonDNS3700.userFlash("Play Lock");
     } else {
-        DenonDNS3700.setTextDisplay(0, 0, "Loading track...");
+        if (DenonDNS3700.playbackState != DenonDNS3700.PlaybackState.Playing) {
+            DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Searching;
+        }       
         DenonDNS3700.trackState = DenonDNS3700.TrackState.Loading;
-        DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Searching;
-        DenonDNS3700.updatePlaybackDisplay();        
+        engine.setValue(DenonDNS3700.channel, "eject", 1);
         engine.setValue(DenonDNS3700.channel, "LoadSelectedTrack", 1);
+        DenonDNS3700.setTextDisplay(0, 0, "Loading track...");
+        DenonDNS3700.updatePlaybackDisplay();
     }
 }
 
@@ -569,28 +573,35 @@ DenonDNS3700.cueButtonChanged = function(channel, control, value)
     DenonDNS3700.updatePlaybackDisplay();
 }
 
-DenonDNS3700.trackAvailableChanged = function()
+DenonDNS3700.mixxxEjectHandler = function()
 {
-    if (DenonDNS3700.isBpmAvailable() || DenonDNS3700.isMixxxPlaying()) {
+    if (DenonDNS3700.trackState == DenonDNS3700.TrackState.Loading) {
+        return;
+    } else if (DenonDNS3700.trackState != DenonDNS3700.TrackState.NotLoaded) {
+        DenonDNS3700.trackState = DenonDNS3700.TrackState.NotLoaded;
+        DenonDNS3700.setTextDisplay(0, 0, "No track loaded.");
+        if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Paused) {
+            DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Searching;
+        }
+        DenonDNS3700.updatePlaybackDisplay();
+    }
+}
+
+DenonDNS3700.mixxxBpmHandler = function(value)
+{
+    if (DenonDNS3700.trackState == DenonDNS3700.Loading) {
+        return;
+    } else if (DenonDNS3700.mixxxBpmIsAvailable() || DenonDNS3700.mixxxIsPlaying()) {
         if (DenonDNS3700.trackState != DenonDNS3700.TrackState.Loaded) {
             DenonDNS3700.trackState = DenonDNS3700.TrackState.Loaded;
             DenonDNS3700.userFlash("Track Loaded");
             DenonDNS3700.userScroll("Various Artists - Track Name Placeholder");
+            DenonDNS3700.updatePlaybackDisplay();
         }
-    } else {
-        if (DenonDNS3700.trackState != DenonDNS3700.TrackState.NotLoaded) {
-            DenonDNS3700.trackState = DenonDNS3700.TrackState.NotLoaded;
-            DenonDNS3700.userFlash("NO track");
-            DenonDNS3700.setTextDisplay(0, 0, "No track loaded.");
-            if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Paused) {
-                DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Searching;
-            }
-        }
-    }
-    DenonDNS3700.updatePlaybackDisplay();
+    }   
 }
 
-DenonDNS3700.beatActiveChanged = function(value)
+DenonDNS3700.mixxxBeatActiveHandler = function(value)
 {    
     DenonDNS3700.tapLed(value ? DenonDNS3700.LedMode.On
                               : DenonDNS3700.LedMode.Off);
@@ -836,6 +847,7 @@ DenonDNS3700.shutdown = function ()
     // stop all timers
     DenonDNS3700.stopTimer(DenonDNS3700.initFlashTimer);
     DenonDNS3700.stopTimer(DenonDNS3700.requestPresetDataTimer);
+    
     DenonDNS3700.stopTimer(DenonDNS3700.textDisplayTimer[0]);
     DenonDNS3700.stopTimer(DenonDNS3700.textDisplayTimer[1]);
 
