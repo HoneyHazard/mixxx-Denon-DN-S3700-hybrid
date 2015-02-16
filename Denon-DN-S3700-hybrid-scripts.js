@@ -119,6 +119,7 @@ DenonDNS3700.PlaybackState = {
     Searching: 1,
     Paused: 2,
     Playing: 3,
+    CueHeld: 4
 }
 
 DenonDNS3700.TrackState = {
@@ -207,6 +208,7 @@ DenonDNS3700.init = function (id, debug)
 
     DenonDNS3700.deck = -1;
     DenonDNS3700.channel = null;
+    DenonDNS3700.cueHeld = false;
     DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Initializing;
     DenonDNS3700.trackState = DenonDNS3700.TrackState.Initializing;
     DenonDNS3700.startTimer(DenonDNS3700.requestPresetDataTimer, 250,
@@ -552,9 +554,19 @@ DenonDNS3700.cueButtonChanged = function(channel, control, value)
    
     if (value == DenonDNS3700.ButtonChange.ButtonPressed) {
         DenonDNS3700.debugFlash("Cue Pressed");       
-        DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Searching;              
-        DenonDNS3700.updatePlaybackDisplay();
+        if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Searching) {
+            if (DenonDNS3700.trackState == DenonDNS3700.TrackState.Loaded) {
+                DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Playing;
+            }
+        } else {
+            DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Searching;
+        }             
+    } else {
+        // cue button released
+        DenonDNS3700.debugFlash("Cue Released");
+        DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Searching;
     }
+    DenonDNS3700.updatePlaybackDisplay();
 }
 
 DenonDNS3700.trackAvailableChanged = function()
@@ -568,7 +580,7 @@ DenonDNS3700.trackAvailableChanged = function()
     } else {
         if (DenonDNS3700.trackState != DenonDNS3700.TrackState.NotLoaded) {
             DenonDNS3700.trackState = DenonDNS3700.TrackState.NotLoaded;
-            DenonDNS3700.userFlash("Track NOT loaded");
+            DenonDNS3700.userFlash("NO track");
             DenonDNS3700.setTextDisplay(0, 0, "No track loaded.");
             if (DenonDNS3700.playbackState == DenonDNS3700.PlaybackState.Paused) {
                 DenonDNS3700.playbackState = DenonDNS3700.PlaybackState.Searching;
